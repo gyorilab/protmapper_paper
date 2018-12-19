@@ -4,14 +4,16 @@ import sys
 import glob
 import pickle
 from os.path import join as pjoin
-from indra.tools import assemble_corpus as ac
 from collections import OrderedDict, Counter, namedtuple, defaultdict
-from indra.preassembler.sitemapper import SiteMapper, default_site_map
+import numpy as np
+from matplotlib import pyplot as plt
+
+from indra.tools import assemble_corpus as ac
 from indra.util import write_unicode_csv, read_unicode_csv
 from indra.util import plot_formatting as pf
 
-import numpy as np
-from matplotlib import pyplot as plt
+from protmapper import ProtMapper
+
 
 pf.set_fig_params()
 
@@ -55,7 +57,7 @@ def map_statements(stmts, source, outfile=None):
     return sites
 
 
-def map_agents(mod_agents_file, sm, source, save_csv=True):
+def map_agents(mod_agents_file, pm, source, save_csv=True):
     """Tabulate valid, invalid, and mapped sites from a set of Agents."""
     # Load the agents
     with open(mod_agents_file, 'rb') as f:
@@ -63,42 +65,16 @@ def map_agents(mod_agents_file, sm, source, save_csv=True):
     print("Mapping %s" % mod_agents_file)
     sites = []
     for ag_ix, ag in enumerate(mod_agents):
-        #if ag_ix % 1000 == 0:
-        #    print('%d of %d' % (ag_ix, len(mod_agents)))
-        invalid_sites = sm._check_agent_mod(ag, ag.mods, True, True, True)
-        # Valid
-        if not invalid_sites:
-            valid, mapped, mapped_res, mapped_pos, explanation = \
-                                                      (1, 0, None, None, None)
-        else:
-            assert len(invalid_sites) == 1
-            mapping = invalid_sites[0][1]
-            valid = 0
-            # Not mapped
-            if mapping is None:
-                mapped, mapped_res, mapped_pos, explanation = \
-                                                    (0, None, None, None)
-            # Mapped!
-            else:
-                mapped_res, mapped_pos, explanation = mapping
-                mapped = 1 if mapped_pos else 0
-        si = SiteInfo(ag.name, ag.mods[0].residue, ag.mods[0].position, valid,
-                      mapped, mapped_res, mapped_pos, explanation, None, source)
-        sites.append(si)
+        if ag_ix % 1000 == 0:
+            print('%d of %d' % (ag_ix, len(mod_agents)))
+        up_id = ag.db_refs.get('UP')
+        assert len(ag.mods) == 1
+        ms = pm.map_to_human_ref(up_id, 'uniprot', ag.mods[0].residue,
+                                 ag.mods[0].position)
+        sites.append(ms)
     # Now that we've collected a list of all the sites, tabulate frequencies
     site_counter = Counter(sites)
-    sites_with_freq = []
-    for site, site_freq in site_counter.items():
-        site_args = site._asdict()
-        site_args.update({'freq': site_freq})
-        si = SiteInfo(**site_args)
-        sites_with_freq.append(si)
-    # Write to CSV file
-    if save_csv:
-        header = [field.upper() for field in si._asdict().keys()]
-        rows = header + replace_nones(sites)
-        write_unicode_csv(agent_file.split('.')[0] + '.csv', rows)
-    return sites_with_freq
+    return list(site_counter.items())
 
 # ------------------------------------------------------------
 
@@ -227,15 +203,17 @@ def plot_site_count_dist(sites, num_sites=240):
 def print_stats(sites):
     # Tabulate some stats
     n = len(sites)
-    n_val = len([s for s in sites if s.valid])
+    n_val = len([site for site, freq in sites if site.valid])
     n_inv = n - n_val
-    n_map = len([s for s in sites if s.mapped])
+    n_map = len([site for site, freq in sites
+                 if site.mapped_res and site.mapped_pos])
     def pct(n, d):
         return 100 * n / float(d)
-    f = np.sum([s.freq for s in sites])
-    f_val = np.sum([s.freq for s in sites if s.valid])
+    f = np.sum([freq for site, freq in sites])
+    f_val = np.sum([freq for site, freq in sites if site.valid])
     f_inv = f - f_val
-    f_map = np.sum([s.freq for s in sites if s.mapped])
+    f_map = np.sum([freq for site, freq in sites
+                    if site.mapped_pos and site.mapped_res])
     print("Total sites: %d" % n)
     print("  Valid:   %d (%0.1f)" % (n_val, pct(n_val, n)))
     print("  Invalid: %d (%0.1f)" % (n_inv, pct(n_inv, n)))
@@ -252,28 +230,7 @@ def print_stats(sites):
     # Sample 100 invalid-mapped (by unique sites)
 
 if __name__ == '__main__':
-    outf = '../phase3_eval/output'
-    prior_stmts = ac.load_statements(pjoin(outf, 'prior.pkl'))
-    site_info = map_statements(prior_stmts, source='prior',
-                               outfile='prior_sites.csv')
 
-    #reach_stmts = ac.load_statements(pjoin(outf, 'phase3_stmts.pkl'))
-    #stmts = prior_stmts
-    #stmts = reach_stmts
-    #stmts = ac.map_grounding(stmts, save=pjoin(outf, 'gmapped_stmts.pkl'))
-    #stmts = ac.load_statements(pjoin(outf, 'gmapped_stmts.pkl'))
-
-    sys.exit()
-    """
-    valid, sites, sm = get_incorrect_sites(do_methionine_offset=True,
-                                 do_orthology_mapping=True,
-                                 do_isoform_mapping=True)
-    with open('sm.pkl', 'wb') as f:
-        pickle.dump((sm._cache, sm._sitecount), f)
-    plot_site_count_dist(sm)
-    gene_counts = make_bar_plot(sites)
-
-    """
     # This script does two things:
     # 1) Plots stats on invalid sites from databases
     #    - showing their frequency
@@ -286,14 +243,14 @@ if __name__ == '__main__':
     #    - that the mapped sites are likely legit
     #    - and that the unmapped sites are likely errors
 
-    sm = SiteMapper(default_site_map)
-    with open('smcache.pkl', 'rb') as f:
-        (sm._cache, sm._sitecount) = pickle.load(f)
+    sm = ProtMapper(use_cache=True, cache_path='./pc_site_cache.pkl')
 
     # Load the agent files
-    agent_files = ['pc_pid_modified_agents.pkl',
-                   'pc_psp_modified_agents.pkl',
-                   'pc_reactome_modified_agents.pkl']
+    agent_files = ['output/pc_pid_modified_agents.pkl']
+    #agent_files = glob.glob('data/pc/pc_*_modified_agents.pkl')
+    #agent_files = ['pc_pid_modified_agents.pkl',
+    #               'pc_psp_modified_agents.pkl',
+    #               'pc_reactome_modified_agents.pkl']
     # For each set of mods
     all_sites = []
     for agent_file in agent_files:
@@ -302,12 +259,35 @@ if __name__ == '__main__':
         all_sites += sites
         print("Stats for %s -------------" % db_name)
         print_stats(sites)
+
+    """
     header = [field.upper() for field in all_sites[0]._asdict().keys()]
     rows = header + replace_nones(all_sites)
     write_unicode_csv('pc_all_pe_mods.csv', rows)
     plot_pc_pe_mods(all_sites)
     #with open('smcache.pkl', 'wb') as f:
     #    pickle.dump((sm._cache, sm._sitecount), f)
+    """
 
+    """
+    outf = '../phase3_eval/output'
+    prior_stmts = ac.load_statements(pjoin(outf, 'prior.pkl'))
+    site_info = map_statements(prior_stmts, source='prior',
+                               outfile='prior_sites.csv')
 
+    #reach_stmts = ac.load_statements(pjoin(outf, 'phase3_stmts.pkl'))
+    #stmts = prior_stmts
+    #stmts = reach_stmts
+    #stmts = ac.map_grounding(stmts, save=pjoin(outf, 'gmapped_stmts.pkl'))
+    #stmts = ac.load_statements(pjoin(outf, 'gmapped_stmts.pkl'))
 
+    sys.exit()
+
+    #valid, sites, sm = get_incorrect_sites(do_methionine_offset=True,
+    #                             do_orthology_mapping=True,
+    #                             do_isoform_mapping=True)
+    #with open('sm.pkl', 'wb') as f:
+    #    pickle.dump((sm._cache, sm._sitecount), f)
+    #plot_site_count_dist(sm)
+    #gene_counts = make_bar_plot(sites)
+    """
