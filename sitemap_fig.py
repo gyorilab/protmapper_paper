@@ -15,7 +15,7 @@ from indra.util import plot_formatting as pf
 from protmapper import ProtMapper
 
 
-pf.set_fig_params()
+#pf.set_fig_params()
 
 
 SiteInfo = namedtuple('SiteInfo', ['gene', 'res', 'pos', 'valid', 'mapped',
@@ -69,8 +69,13 @@ def map_agents(mod_agents_file, pm, source, save_csv=True):
             print('%d of %d' % (ag_ix, len(mod_agents)))
         up_id = ag.db_refs.get('UP')
         assert len(ag.mods) == 1
-        ms = pm.map_to_human_ref(up_id, 'uniprot', ag.mods[0].residue,
-                                 ag.mods[0].position)
+        try:
+            ms = pm.map_to_human_ref(up_id, 'uniprot', ag.mods[0].residue,
+                                     ag.mods[0].position)
+        except Exception as e:
+            print("Error: %s" % str(e))
+            print("agent: %s, up_id: %s, res %s, pos %s" %
+                  (ag, up_id, ag.mods[0].residue, ag.mods[0].position))
         sites.append(ms)
     # Now that we've collected a list of all the sites, tabulate frequencies
     site_counter = Counter(sites)
@@ -87,18 +92,20 @@ def make_bar_plot(site_info, num_genes=120):
     # Get counts summed across gene names
     gene_counts = defaultdict(lambda: 0)
     site_counts = defaultdict(list)
-    for site in site_info:
-        gene_counts[site.gene] += int(site.freq)
-        site_counts[site.gene].append((int(site.freq), int(site.mapped),
-                                      site.mapped_res, site.mapped_pos,
-                                      site.explanation))
+    for site, freq in site_info:
+        if not (site.mapped_res and site.mapped_pos):
+            pass
+            #continue
+        gene_counts[site.gene_name] += freq
+        site_counts[site.gene_name].append((freq, site.valid,
+                                            site.mapped_res, site.mapped_pos,
+                                            site.description))
     # Sort the individual site counts by frequency
     for gene, freq_list in site_counts.items():
         site_counts[gene] = sorted(freq_list, key=lambda x: x[0], reverse=True)
     gene_counts = sorted([(k, v) for k, v in gene_counts.items()],
                           key=lambda x: x[1], reverse=True)
 
-    plt.ion()
     def plot_sites(gene_count_subset, figsize, subplot_params, do_legend=True):
         ind = np.array(range(len(gene_count_subset)))
         plt.figure(figsize=figsize, dpi=150)
@@ -107,15 +114,17 @@ def make_bar_plot(site_info, num_genes=120):
         for ix, (gene, freq) in enumerate(gene_count_subset):
             # Plot the stacked bars
             bottom = 0
-            for site_freq, mapped, mapped_res, mapped_pos, explanation \
+            for site_freq, valid, mapped_res, mapped_pos, explanation \
                     in site_counts[gene]:
-                if mapped and \
+                # Don't show sites that are valid
+                mapped = True if mapped_res and mapped_pos else False
+                if valid:
+                    color = 'gray'
+                    handle_key = 'Valid'
+                elif mapped and \
                         explanation.startswith('INFERRED_METHIONINE_CLEAVAGE'):
                     color = 'b'
                     handle_key = 'Methionine'
-                elif mapped and not mapped_pos:
-                    color = 'r'
-                    handle_key = 'Curated as incorrect'
                 elif mapped and \
                         explanation.startswith('INFERRED_MOUSE_SITE'):
                     color = 'c'
@@ -131,11 +140,17 @@ def make_bar_plot(site_info, num_genes=120):
                 elif mapped:
                     color = 'g'
                     handle_key = 'Manually mapped'
+                elif not mapped and explanation is not None \
+                                            and explanation != 'VALID':
+                    color = 'r'
+                    handle_key = 'Curated as incorrect'
+                elif not valid:
+                    assert False
                 else:
-                    color = 'white'
-                    handle_key = 'Unmapped'
-                handle_dict[handle_key] = plt.bar(ix, site_freq, bottom=bottom,                                                   color=color,
-                                                  linewidth=0.5, width=width)
+                    assert False # Make sure we handled all cases above
+                handle_dict[handle_key] = \
+                        plt.bar(ix + 0.4, site_freq, bottom=bottom,
+                                color=color, linewidth=0.5, width=width)
                 bottom += site_freq
         plt.xticks(ind + (width / 2.), [x[0] for x in gene_count_subset],
                    rotation='vertical')
@@ -153,6 +168,8 @@ def make_bar_plot(site_info, num_genes=120):
                {'left': 0.24, 'right': 0.52, 'bottom': 0.31}, do_legend=False)
     plot_sites(gene_counts[4:num_genes], (11, 2),
                {'bottom': 0.31, 'left': 0.06, 'right':0.96})
+    plot_sites(gene_counts, (11, 2),
+               {'left': 0.24, 'right': 0.52, 'bottom': 0.31}, do_legend=False)
     return gene_counts
 
 # ---------------------
@@ -185,9 +202,8 @@ def plot_pc_pe_mods(all_mods):
 
 def plot_site_count_dist(sites, num_sites=240):
     # Plot site frequencies, colored by validity
-    sites.sort(key=lambda s: s.freq, reverse=True)
+    sites.sort(key=lambda s: s[1], reverse=True)
     width = 0.8
-    plt.ion()
     plt.figure(figsize=(11, 2), dpi=150)
     ind = np.arange(num_sites) + (width / 2.)
     for site_ix, site in enumerate(sites[:num_sites]):
@@ -202,6 +218,10 @@ def plot_site_count_dist(sites, num_sites=240):
 
 def print_stats(sites):
     # Tabulate some stats
+    if len(sites) == 0:
+        print("No sites!")
+        return
+
     n = len(sites)
     n_val = len([site for site, freq in sites if site.valid])
     n_inv = n - n_val
@@ -242,23 +262,34 @@ if __name__ == '__main__':
     # 3) Showing accuracy:
     #    - that the mapped sites are likely legit
     #    - and that the unmapped sites are likely errors
-
+    plt.ion()
     sm = ProtMapper(use_cache=True, cache_path='./pc_site_cache.pkl')
 
     # Load the agent files
-    agent_files = ['output/pc_pid_modified_agents.pkl']
-    #agent_files = glob.glob('data/pc/pc_*_modified_agents.pkl')
-    #agent_files = ['pc_pid_modified_agents.pkl',
-    #               'pc_psp_modified_agents.pkl',
-    #               'pc_reactome_modified_agents.pkl']
+    #agent_files = ['output/pc_pid_modified_agents.pkl']
+    agent_files = glob.glob('output/pc_*_modified_agents.pkl')
+    #agent_files = ['output/pc_pid_modified_agents.pkl',
+    #               'output/pc_psp_modified_agents.pkl',
+    #               'output/pc_reactome_modified_agents.pkl']
     # For each set of mods
-    all_sites = []
-    for agent_file in agent_files:
-        db_name = agent_file.split('_')[1]
-        sites = map_agents(agent_file, sm, db_name)
-        all_sites += sites
-        print("Stats for %s -------------" % db_name)
+    remap = True
+    if remap:
+        all_sites = {}
+        for agent_file in agent_files:
+            db_name = agent_file.split('_')[1]
+            sites = map_agents(agent_file, sm, db_name)
+            all_sites[db_name] = sites
+        with open('all_sites.pkl', 'wb') as f:
+            pickle.dump(all_sites, f)
+    else:
+        with open('all_sites.pkl', 'rb') as f:
+            all_sites = pickle.load(f)
+
+    # Now make figures for the sites
+    for source, sites in all_sites.items():
+        print("Stats for %s -------------" % source)
         print_stats(sites)
+        #gene_counts = make_bar_plot(sites)
 
     """
     header = [field.upper() for field in all_sites[0]._asdict().keys()]
