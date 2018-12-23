@@ -47,9 +47,11 @@ $(OUTPUT)/bel_mod_agents.pkl: $(OUTPUT)/large_corpus_pybel.pkl
 $(OUTPUT)/bel_sites.pkl: $(OUTPUT)/bel_mod_agents.pkl
 	python sitemap_fig.py map_bel_sites
 
-
-$(OUTPUT)/fig1_pct_incorrect_sites.pdf: \
+$(OUTPUT)/all_db_sites.csv: \
     $(OUTPUT)/bel_sites.pkl \
     $(OUTPUT)/pc_sites_by_db.pkl
-	echo "Hello"
+	python sitemap_fig.py create_site_csv
 
+
+$(OUTPUT)/fig1_pct_incorrect_sites.pdf: $(OUTPUT)/all_db_sites.csv
+	python sitemap_fig.py plot_site_stats

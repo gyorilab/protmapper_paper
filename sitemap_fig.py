@@ -6,6 +6,7 @@ import pickle
 from os.path import join as pjoin
 from collections import OrderedDict, Counter, namedtuple, defaultdict
 import numpy as np
+import pandas as pd
 from matplotlib import pyplot as plt
 from indra.tools import assemble_corpus as ac
 from indra.util import write_unicode_csv, read_unicode_csv
@@ -18,9 +19,11 @@ from protmapper import ProtMapper
 #pf.set_fig_params()
 
 
-SiteInfo = namedtuple('SiteInfo', ['gene', 'res', 'pos', 'valid', 'mapped',
-                                   'mapped_res', 'mapped_pos', 'explanation',
-                                   'freq', 'source'])
+SiteInfo = namedtuple('SiteInfo', ['source', 'gene_name', 'up_id',
+                                   'error_code',
+                                   'valid', 'orig_res', 'orig_pos',
+                                   'mapped_res', 'mapped_pos',
+                                   'description', 'freq'])
 
 
 def map_statements(stmts, source, outfile=None):
@@ -92,9 +95,9 @@ def map_agents(mod_agents_file, pm, source, save_csv=True):
 
 # ------------------------------------------------------------
 
-def load_incorrect_sites():
-    rows = read_unicode_csv('incorrect_sites.csv')
-    return [SiteInfo(*row) for row in rows]
+def load_site_info(filename):
+    return [SiteInfo(*[None if cell == '' else cell])
+            for row in read_unicode_csv(filename) for cell in row]
 
 def make_bar_plot(site_info, num_genes=120):
     # Build a dict based on gene name
@@ -225,38 +228,48 @@ def plot_site_count_dist(sites, num_sites=240):
     pf.format_axis(ax)
     plt.show()
 
-def print_stats(sites):
-    # Tabulate some stats
-    if len(sites) == 0:
-        print("No sites!")
-        return
-
-    n = len(sites)
-    n_val = len([site for site, freq in sites if site.valid])
-    n_inv = n - n_val
-    n_map = len([site for site, freq in sites
-                 if site.mapped_res and site.mapped_pos])
+def print_stats(df):
+    """Print statistics about site validity."""
     def pct(n, d):
         return 100 * n / float(d)
-    f = np.sum([freq for site, freq in sites])
-    f_val = np.sum([freq for site, freq in sites if site.valid])
-    f_inv = f - f_val
-    f_map = np.sum([freq for site, freq in sites
-                    if site.mapped_pos and site.mapped_res])
-    print("Total sites: %d" % n)
-    print("  Valid:   %d (%0.1f)" % (n_val, pct(n_val, n)))
-    print("  Invalid: %d (%0.1f)" % (n_inv, pct(n_inv, n)))
-    print("  Mapped:  %d (%0.1f)" % (n_map, pct(n_map, n)))
-    print("%% Mapped:  %0.1f" % pct(n_map, n_inv))
-    print()
-    print("Total site occurrences: %d" % f)
-    print("  Valid:   %d (%0.1f)" % (f_val, pct(f_val, f)))
-    print("  Invalid: %d (%0.1f)" % (f_inv, pct(f_inv, f)))
-    print("  Mapped:  %d (%0.1f)" % (f_map, pct(f_map, f)))
-    print("Pct occurrences mapped: %0.1f" % pct(f_map, f_inv))
-    print()
+
+    # Group statistics by source
+    sources = df.SOURCE.unique()
+    for source in sources:
+        print("Stats for %s -------------" % source)
+        s = df[df.SOURCE == source]
+        s_valid = s[s.VALID]
+        s_map = s[s.MAPPED_POS.notnull()]
+        n = len(s)
+        n_val = len(s_valid)
+        n_inv = n - n_val
+        n_map = len(s_map)
+        f = s.FREQ.sum()
+        f_val = s_valid.FREQ.sum()
+        f_inv = f - f_val
+        f_map = s_map.FREQ.sum()
+        print("Total sites: %d" % n)
+        print("  Valid:   %d (%0.1f)" % (n_val, pct(n_val, n)))
+        print("  Invalid: %d (%0.1f)" % (n_inv, pct(n_inv, n)))
+        print("  Mapped:  %d (%0.1f)" % (n_map, pct(n_map, n)))
+        print("%% Mapped:  %0.1f\n" % pct(n_map, n_inv))
+        print("Total site occurrences: %d" % f)
+        print("  Valid:   %d (%0.1f)" % (f_val, pct(f_val, f)))
+        print("  Invalid: %d (%0.1f)" % (f_inv, pct(f_inv, f)))
+        print("  Mapped:  %d (%0.1f)" % (f_map, pct(f_map, f)))
+        print("Pct occurrences mapped: %0.1f\n" % pct(f_map, f_inv))
+
     # Sample 100 invalid-unmapped (by unique sites)
     # Sample 100 invalid-mapped (by unique sites)
+
+def ms_to_si(source, freq, ms):
+    si = SiteInfo(source=source, gene_name=ms.gene_name,
+                  up_id=ms.up_id, error_code=ms.error_code,
+                  valid=ms.valid, orig_res=ms.orig_res, orig_pos=ms.orig_pos,
+                  mapped_res=ms.mapped_res, mapped_pos=ms.mapped_pos,
+                  description=ms.description, freq=freq)
+    return si
+
 
 if __name__ == '__main__':
 
@@ -279,7 +292,8 @@ if __name__ == '__main__':
     PC_SITES_BY_DB = 'output/pc_sites_by_db.pkl'
     BEL_AGENTS = 'output/bel_mod_agents.pkl'
     BEL_SITES = 'output/bel_sites.pkl'
-    # MAP PC SITES
+    ALL_SITES_CSV = 'output/all_db_sites.csv'
+    # Map sites from Pathway Commons
     if sys.argv[1] == 'map_pc_sites':
         pm = ProtMapper(use_cache=True, cache_path=CACHE_PATH)
         agent_files = glob.glob('output/pc_*_modified_agents.pkl')
@@ -290,35 +304,47 @@ if __name__ == '__main__':
             all_sites[db_name] = sites
         with open(PC_SITES_BY_DB, 'wb') as f:
             pickle.dump(all_sites, f)
+    # Map sites from BEL large corpus
     elif sys.argv[1] == 'map_bel_sites':
-        # First, map sites from BEL large corpus
         with open(BEL_AGENTS, 'rb') as f:
             bel_agents = pickle.load(f)
         pm = ProtMapper(use_cache=True, cache_path=CACHE_PATH)
         bel_sites = map_agents(BEL_AGENTS, pm, 'bel')
         with open(BEL_SITES, 'wb') as f:
             pickle.dump(bel_sites, f)
-    elif sys.argv[1] == 'plot_pct_incorrect_sites':
+    # Create a single CSV file containing information about all sites from
+    # databases
+    elif sys.argv[1] == 'create_site_csv':
+        all_sites = []
         # Load PC sites
         with open(PC_SITES_BY_DB, 'rb') as f:
             pc_sites = pickle.load(f)
+        for db, sites in pc_sites.items():
+            for ms, freq in sites:
+                all_sites.append(ms_to_si(db, freq, ms))
+        # Load BEL sites
+        with open(BEL_SITES, 'rb') as f:
+            bel_sites = pickle.load(f)
+        for ms, freq in bel_sites:
+            all_sites.append(ms_to_si('bel', freq, ms))
+        header = [[field.upper() for field in all_sites[0]._asdict().keys()]]
+        rows = header + replace_nones(all_sites)
+        write_unicode_csv(ALL_SITES_CSV, rows)
+    # Load the CSV file and plot site statistics
+    elif sys.argv[1] == 'plot_site_stats':
+        site_df = pd.read_csv(ALL_SITES_CSV)
+        # Drop the two rows with error_code (invalid gene names in BEL)
+        site_df = site_df[site_df.ERROR_CODE.isna()]
+        print_stats(site_df)
         # Now make figures for the sites
-        for source, sites in all_sites.items():
-            print("Stats for %s -------------" % source)
-            print_stats(sites)
-        print_stats(bel_sites)
-
+        #for source, sites in pc_sites.items():
+        #    print("Stats for %s -------------" % source)
+        #    print_stats(sites)
+        # Now load BEL sites
+        #print("Stats for %s -------------" % 'BEL')
+        #print_stats(bel_sites)
     else:
         pass
-
-    """
-    header = [field.upper() for field in all_sites[0]._asdict().keys()]
-    rows = header + replace_nones(all_sites)
-    write_unicode_csv('pc_all_pe_mods.csv', rows)
-    plot_pc_pe_mods(all_sites)
-    #with open('smcache.pkl', 'wb') as f:
-    #    pickle.dump((sm._cache, sm._sitecount), f)
-    """
 
     """
     outf = '../phase3_eval/output'
