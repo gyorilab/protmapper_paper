@@ -340,6 +340,7 @@ if __name__ == '__main__':
             all_sites[db_name] = sites
         with open(PC_SITES_BY_DB, 'wb') as f:
             pickle.dump(all_sites, f)
+        pm.save_cache()
     # Map sites from BEL large corpus
     elif sys.argv[1] == 'map_bel_sites':
         with open(BEL_AGENTS, 'rb') as f:
@@ -348,6 +349,7 @@ if __name__ == '__main__':
         bel_sites = map_agents(BEL_AGENTS, pm, 'bel')
         with open(BEL_SITES, 'wb') as f:
             pickle.dump(bel_sites, f)
+        pm.save_cache()
     # Create a single CSV file containing information about all sites from
     # databases
     elif sys.argv[1] == 'create_site_csv':
