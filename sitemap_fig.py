@@ -7,10 +7,10 @@ from os.path import join as pjoin
 from collections import OrderedDict, Counter, namedtuple, defaultdict
 import numpy as np
 from matplotlib import pyplot as plt
-
 from indra.tools import assemble_corpus as ac
 from indra.util import write_unicode_csv, read_unicode_csv
 from indra.util import plot_formatting as pf
+from indra.tools import assemble_corpus as ac
 
 from protmapper import ProtMapper
 
@@ -67,16 +67,25 @@ def map_agents(mod_agents_file, pm, source, save_csv=True):
     for ag_ix, ag in enumerate(mod_agents):
         if ag_ix % 1000 == 0:
             print('%d of %d' % (ag_ix, len(mod_agents)))
-        up_id = ag.db_refs.get('UP')
-        assert len(ag.mods) == 1
+        if ag is None:
+            print("Skipping None agent")
+            continue
         try:
-            ms = pm.map_to_human_ref(up_id, 'uniprot', ag.mods[0].residue,
+            up_id = ag.db_refs.get('UP')
+            if len(ag.mods) == 1:
+                ms = pm.map_to_human_ref(up_id, 'uniprot', ag.mods[0].residue,
                                      ag.mods[0].position)
+                sites.append(ms)
+            elif len(ag.mods) > 1:
+                sitelist = [(up_id, 'uniprot', m.residue, m.position)
+                             for m in ag.mods]
+                ms_list = pm.map_site_list_to_human_ref(sitelist)
+                sites.extend(ms_list)
         except Exception as e:
             print("Error: %s" % str(e))
-            print("agent: %s, up_id: %s, res %s, pos %s" %
-                  (ag, up_id, ag.mods[0].residue, ag.mods[0].position))
-        sites.append(ms)
+            print("agent: %s, up_id: %s, res %s, pos %s, db_refs %s" %
+                  (ag, up_id, ag.mods[0].residue, ag.mods[0].position,
+                   str(ag.db_refs)))
     # Now that we've collected a list of all the sites, tabulate frequencies
     site_counter = Counter(sites)
     return list(site_counter.items())
@@ -262,34 +271,45 @@ if __name__ == '__main__':
     # 3) Showing accuracy:
     #    - that the mapped sites are likely legit
     #    - and that the unmapped sites are likely errors
-    plt.ion()
-    sm = ProtMapper(use_cache=True, cache_path='./pc_site_cache.pkl')
 
     # Load the agent files
-    #agent_files = ['output/pc_pid_modified_agents.pkl']
-    agent_files = glob.glob('output/pc_*_modified_agents.pkl')
-    #agent_files = ['output/pc_pid_modified_agents.pkl',
-    #               'output/pc_psp_modified_agents.pkl',
-    #               'output/pc_reactome_modified_agents.pkl']
-    # For each set of mods
-    remap = True
-    if remap:
+
+    # Constants
+    CACHE_PATH = 'output/pc_site_cache.pkl'
+    PC_SITES_BY_DB = 'output/pc_sites_by_db.pkl'
+    BEL_AGENTS = 'output/bel_mod_agents.pkl'
+    BEL_SITES = 'output/bel_sites.pkl'
+    # MAP PC SITES
+    if sys.argv[1] == 'map_pc_sites':
+        pm = ProtMapper(use_cache=True, cache_path=CACHE_PATH)
+        agent_files = glob.glob('output/pc_*_modified_agents.pkl')
         all_sites = {}
         for agent_file in agent_files:
             db_name = agent_file.split('_')[1]
-            sites = map_agents(agent_file, sm, db_name)
+            sites = map_agents(agent_file, pm, db_name)
             all_sites[db_name] = sites
-        with open('all_sites.pkl', 'wb') as f:
+        with open(PC_SITES_BY_DB, 'wb') as f:
             pickle.dump(all_sites, f)
-    else:
-        with open('all_sites.pkl', 'rb') as f:
-            all_sites = pickle.load(f)
+    elif sys.argv[1] == 'map_bel_sites':
+        # First, map sites from BEL large corpus
+        with open(BEL_AGENTS, 'rb') as f:
+            bel_agents = pickle.load(f)
+        pm = ProtMapper(use_cache=True, cache_path=CACHE_PATH)
+        bel_sites = map_agents(BEL_AGENTS, pm, 'bel')
+        with open(BEL_SITES, 'wb') as f:
+            pickle.dump(bel_sites, f)
+    elif sys.argv[1] == 'plot_pct_incorrect_sites':
+        # Load PC sites
+        with open(PC_SITES_BY_DB, 'rb') as f:
+            pc_sites = pickle.load(f)
+        # Now make figures for the sites
+        for source, sites in all_sites.items():
+            print("Stats for %s -------------" % source)
+            print_stats(sites)
+        print_stats(bel_sites)
 
-    # Now make figures for the sites
-    for source, sites in all_sites.items():
-        print("Stats for %s -------------" % source)
-        print_stats(sites)
-        #gene_counts = make_bar_plot(sites)
+    else:
+        pass
 
     """
     header = [field.upper() for field in all_sites[0]._asdict().keys()]
