@@ -7,6 +7,7 @@ from os.path import join as pjoin
 from collections import OrderedDict, Counter, namedtuple, defaultdict
 import numpy as np
 import pandas as pd
+import seaborn as sns
 from matplotlib import pyplot as plt
 from indra.tools import assemble_corpus as ac
 from indra.util import write_unicode_csv, read_unicode_csv
@@ -18,12 +19,6 @@ from protmapper import ProtMapper
 
 #pf.set_fig_params()
 
-
-SiteInfo = namedtuple('SiteInfo', ['source', 'gene_name', 'up_id',
-                                   'error_code',
-                                   'valid', 'orig_res', 'orig_pos',
-                                   'mapped_res', 'mapped_pos',
-                                   'description', 'freq'])
 
 
 def map_statements(stmts, source, outfile=None):
@@ -93,11 +88,118 @@ def map_agents(mod_agents_file, pm, source, save_csv=True):
     site_counter = Counter(sites)
     return list(site_counter.items())
 
-# ------------------------------------------------------------
 
-def load_site_info(filename):
-    return [SiteInfo(*[None if cell == '' else cell])
-            for row in read_unicode_csv(filename) for cell in row]
+# UTIL for tabulating and saving Site Info --------------------------------
+
+SiteInfo = namedtuple('SiteInfo', ['source', 'gene_name', 'up_id',
+                                   'error_code',
+                                   'valid', 'orig_res', 'orig_pos',
+                                   'mapped_res', 'mapped_pos',
+                                   'description', 'freq'])
+
+
+def ms_to_si(source, freq, ms):
+    return SiteInfo(source=source, gene_name=ms.gene_name,
+                  up_id=ms.up_id, error_code=ms.error_code,
+                  valid=ms.valid, orig_res=ms.orig_res, orig_pos=ms.orig_pos,
+                  mapped_res=ms.mapped_res, mapped_pos=ms.mapped_pos,
+                  description=ms.description, freq=freq)
+
+
+def replace_nones(rows):
+    return [[cell if cell is not None else '' for cell in row]
+             for row in rows]
+
+
+def print_stats(site_df):
+    """Print statistics about site validity."""
+    def pct(n, d):
+        return 100 * n / float(d)
+    df = site_df[site_df.ERROR_CODE.isna()]
+    results = {}
+    # Group statistics by source
+    sources = df.SOURCE.unique()
+    for source in sources:
+        print("Stats for %s -------------" % source)
+        s = df[df.SOURCE == source]
+        s_valid = s[s.VALID]
+        s_map = s[s.MAPPED_POS.notnull()]
+        n = len(s)
+        n_val = len(s_valid)
+        n_inv = n - n_val
+        n_map = len(s_map)
+        n_unmap = n_inv - n_map
+        f = s.FREQ.sum()
+        f_val = s_valid.FREQ.sum()
+        f_inv = f - f_val
+        f_map = s_map.FREQ.sum()
+        f_unmap = f_inv - f_map
+        db_results = {
+                'Source': source,
+                'Total Sites': n,
+                'Valid Sites': n_val,
+                'Valid Sites Pct.': pct(n_val, n),
+                'Invalid Sites': n_inv,
+                'Invalid Sites Pct.': pct(n_inv, n),
+                'Mapped Sites': n_map,
+                'Mapped Sites Pct.': pct(n_map, n_inv),
+                'Mapped Sites Pct. Total': pct(n_map, n),
+                'Unmapped Sites': n_unmap,
+                'Unmapped Sites Pct.': pct(n_unmap, n_inv),
+                'Unmapped Sites Pct. Total': pct(n_unmap, n),
+                'Total Occurrences': f,
+                'Valid Occ.': f_val,
+                'Valid Occ. Pct.': pct(f_val, f),
+                'Invalid Occ.': f_inv,
+                'Invalid Occ. Pct.': pct(f_inv, f),
+                'Mapped Occ.': f_map,
+                'Mapped Occ. Pct.': pct(f_map, f_inv),
+                'Mapped Occ. Pct. Total': pct(f_map, f),
+                'Unmapped Occ.': f_unmap,
+                'Unmapped Occ. Pct.': pct(f_unmap, f_inv),
+                'Unmapped Occ. Pct. Total': pct(f_unmap, f),
+        }
+        results[source] = db_results
+
+        print("Total sites: %d" % n)
+        print("  Valid:   %d (%0.1f)" % (n_val, pct(n_val, n)))
+        print("  Invalid: %d (%0.1f)" % (n_inv, pct(n_inv, n)))
+        print("  Mapped:  %d (%0.1f)" % (n_map, pct(n_map, n)))
+        print("%% Mapped:  %0.1f\n" % pct(n_map, n_inv))
+        print("Total site occurrences: %d" % f)
+        print("  Valid:   %d (%0.1f)" % (f_val, pct(f_val, f)))
+        print("  Invalid: %d (%0.1f)" % (f_inv, pct(f_inv, f)))
+        print("  Mapped:  %d (%0.1f)" % (f_map, pct(f_map, f)))
+        print("Pct occurrences mapped: %0.1f\n" % pct(f_map, f_inv))
+    # Sample 100 invalid-unmapped (by unique sites)
+    # Sample 100 invalid-mapped (by unique sites)
+    results_df = pd.DataFrame.from_dict(results, orient='index')
+    return results_df
+
+
+# -- PLOTTING ----------------------------------------------------------
+
+def plot_pc_pe_mods(all_mods):
+    dbs = Counter([row.source for row in all_mods])
+    dbs = sorted([(k, v) for k, v in dbs.items()], key=lambda x: x[1],
+                 reverse=True)
+    plt.ion()
+    width = 0.8
+    ind = np.arange(len(dbs)) + (width / 2.)
+    plt.figure(figsize=(2, 2), dpi=150)
+    for db_ix, (db, db_freq) in enumerate(dbs):
+        db_mods = [row for row in all_mods if row.source == db]
+        valid = [row for row in db_mods if row.valid == 1]
+        invalid = [row for row in db_mods if row.valid == 0]
+        h_valid = plt.bar(db_ix, len(valid), width=width, color='g')
+        h_invalid = plt.bar(db_ix, len(invalid), width=0.8, color='r',
+                            bottom=len(valid))
+    plt.xticks(ind, [db[0] for db in dbs])
+    ax = plt.gca()
+    pf.format_axis(ax)
+    plt.show()
+
+
 
 def make_bar_plot(site_info, num_genes=120):
     # Build a dict based on gene name
@@ -187,30 +289,6 @@ def make_bar_plot(site_info, num_genes=120):
 # ---------------------
 
 
-def replace_nones(rows):
-    return [[cell if cell is not None else '' for cell in row]
-             for row in rows]
-
-
-def plot_pc_pe_mods(all_mods):
-    dbs = Counter([row.source for row in all_mods])
-    dbs = sorted([(k, v) for k, v in dbs.items()], key=lambda x: x[1],
-                 reverse=True)
-    plt.ion()
-    width = 0.8
-    ind = np.arange(len(dbs)) + (width / 2.)
-    plt.figure(figsize=(2, 2), dpi=150)
-    for db_ix, (db, db_freq) in enumerate(dbs):
-        db_mods = [row for row in all_mods if row.source == db]
-        valid = [row for row in db_mods if row.valid == 1]
-        invalid = [row for row in db_mods if row.valid == 0]
-        h_valid = plt.bar(db_ix, len(valid), width=width, color='g')
-        h_invalid = plt.bar(db_ix, len(invalid), width=0.8, color='r',
-                            bottom=len(valid))
-    plt.xticks(ind, [db[0] for db in dbs])
-    ax = plt.gca()
-    pf.format_axis(ax)
-    plt.show()
 
 def plot_site_count_dist(sites, num_sites=240):
     # Plot site frequencies, colored by validity
@@ -227,48 +305,6 @@ def plot_site_count_dist(sites, num_sites=240):
     ax = plt.gca()
     pf.format_axis(ax)
     plt.show()
-
-def print_stats(df):
-    """Print statistics about site validity."""
-    def pct(n, d):
-        return 100 * n / float(d)
-
-    # Group statistics by source
-    sources = df.SOURCE.unique()
-    for source in sources:
-        print("Stats for %s -------------" % source)
-        s = df[df.SOURCE == source]
-        s_valid = s[s.VALID]
-        s_map = s[s.MAPPED_POS.notnull()]
-        n = len(s)
-        n_val = len(s_valid)
-        n_inv = n - n_val
-        n_map = len(s_map)
-        f = s.FREQ.sum()
-        f_val = s_valid.FREQ.sum()
-        f_inv = f - f_val
-        f_map = s_map.FREQ.sum()
-        print("Total sites: %d" % n)
-        print("  Valid:   %d (%0.1f)" % (n_val, pct(n_val, n)))
-        print("  Invalid: %d (%0.1f)" % (n_inv, pct(n_inv, n)))
-        print("  Mapped:  %d (%0.1f)" % (n_map, pct(n_map, n)))
-        print("%% Mapped:  %0.1f\n" % pct(n_map, n_inv))
-        print("Total site occurrences: %d" % f)
-        print("  Valid:   %d (%0.1f)" % (f_val, pct(f_val, f)))
-        print("  Invalid: %d (%0.1f)" % (f_inv, pct(f_inv, f)))
-        print("  Mapped:  %d (%0.1f)" % (f_map, pct(f_map, f)))
-        print("Pct occurrences mapped: %0.1f\n" % pct(f_map, f_inv))
-
-    # Sample 100 invalid-unmapped (by unique sites)
-    # Sample 100 invalid-mapped (by unique sites)
-
-def ms_to_si(source, freq, ms):
-    si = SiteInfo(source=source, gene_name=ms.gene_name,
-                  up_id=ms.up_id, error_code=ms.error_code,
-                  valid=ms.valid, orig_res=ms.orig_res, orig_pos=ms.orig_pos,
-                  mapped_res=ms.mapped_res, mapped_pos=ms.mapped_pos,
-                  description=ms.description, freq=freq)
-    return si
 
 
 if __name__ == '__main__':
@@ -335,7 +371,7 @@ if __name__ == '__main__':
         site_df = pd.read_csv(ALL_SITES_CSV)
         # Drop the two rows with error_code (invalid gene names in BEL)
         site_df = site_df[site_df.ERROR_CODE.isna()]
-        print_stats(site_df)
+        results = print_stats(site_df)
         # Now make figures for the sites
         #for source, sites in pc_sites.items():
         #    print("Stats for %s -------------" % source)
@@ -343,6 +379,19 @@ if __name__ == '__main__':
         # Now load BEL sites
         #print("Stats for %s -------------" % 'BEL')
         #print_stats(bel_sites)
+        # By site
+        by_site = results[['Valid Sites', 'Mapped Sites', 'Unmapped Sites']]
+        by_site_pct = results[['Valid Sites Pct.', 'Mapped Sites Pct. Total',
+                               'Unmapped Sites Pct. Total']]
+        by_occ = results[['Valid Occ.', 'Mapped Occ.', 'Unmapped Occ.']]
+        by_occ_pct = results[['Valid Occ. Pct.', 'Mapped Occ. Pct. Total',
+                              'Unmapped Occ. Pct. Total']]
+        for df, kind in ((by_site, 'by_site'), (by_site_pct, 'by_site_pct'),
+                         (by_occ, 'by_occ'), (by_occ_pct, 'by_occ_pct')):
+            plt.figure()
+            df.plot(kind='bar', stacked=True)
+            plt.subplots_adjust(bottom=0.2)
+            plt.savefig('plots/site_stats_%s.pdf' % kind)
     else:
         pass
 

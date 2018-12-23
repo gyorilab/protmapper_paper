@@ -1,6 +1,9 @@
 OUTPUT := output
+PLOTS := plots
 DATA := data
 DEPLOY := ../sitemapper_manuscript/figures/figure_panels
+
+all: fig1 graph
 
 fig1: $(OUTPUT)/fig1_pct_incorrect_sites.pdf
 
@@ -53,5 +56,5 @@ $(OUTPUT)/all_db_sites.csv: \
 	python sitemap_fig.py create_site_csv
 
 
-$(OUTPUT)/fig1_pct_incorrect_sites.pdf: $(OUTPUT)/all_db_sites.csv
+$(PLOTS)/site_stats_by_site.pdf: $(OUTPUT)/all_db_sites.csv
 	python sitemap_fig.py plot_site_stats
