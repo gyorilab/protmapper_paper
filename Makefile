@@ -5,7 +5,7 @@ DEPLOY := ../sitemapper_manuscript/figures/figure_panels
 
 all: fig1 graph
 
-fig1: $(OUTPUT)/fig1_pct_incorrect_sites.pdf
+fig1: $(PLOTS)/site_stats_by_site.pdf
 
 # MAKEFILE GRAPH
 graph: makegraph.pdf
