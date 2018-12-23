@@ -4,7 +4,10 @@ python:
 before_install:
   - pip install -r requirements.txt
   - pip install -e git://github.com/indralab/protmapper.git
+  - pip install awscli
 before_script:
   - python -m protmapper.resources
+  - aws s3 cp --recursive s3://protmapper-paper/data/ ./data
+  - aws s3 cp s3://protmapper-paper/output/pc_site_cache.pkl ./output/
 script:
   - make all
