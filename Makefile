@@ -31,7 +31,10 @@ clean:
 
 # FIG1 --------------------------------------------------------------
 # PC Sites
-$(OUTPUT)/pc_psp_modified_agents.pkl:
+$(OUTPUT)/pc_psp_modified_agents.pkl: \
+    $(DATA)/pc/PathwayCommons10.psp.BIOPAX.owl \
+    $(DATA)/pc/PathwayCommons10.reactome.BIOPAX.owl \
+    $(DATA)/pc/PathwayCommons10.pid.BIOPAX.owl
 	python get_pc_sites.py
 
 $(OUTPUT)/pc_sites_by_db.pkl: \
@@ -42,7 +45,7 @@ $(OUTPUT)/pc_sites_by_db.pkl: \
 
 # BEL Sites
 $(OUTPUT)/large_corpus_pybel.pkl: $(DATA)/large_corpus.bel
-	python process_bel_large_corpus.py parse_belscript
+	python process_bel_large_corpus.py parse_belscript 2> /dev/null
 
 $(OUTPUT)/bel_mod_agents.pkl: $(OUTPUT)/large_corpus_pybel.pkl
 	python process_bel_large_corpus.py get_pybel_mod_agents
@@ -55,6 +58,6 @@ $(OUTPUT)/all_db_sites.csv: \
     $(OUTPUT)/pc_sites_by_db.pkl
 	python sitemap_fig.py create_site_csv
 
-
 $(PLOTS)/site_stats_by_site.pdf: $(OUTPUT)/all_db_sites.csv
 	python sitemap_fig.py plot_site_stats
+
