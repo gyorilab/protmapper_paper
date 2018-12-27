@@ -4,3 +4,4 @@ matplotlib
 numpy
 indra
 pybel
+pyjnius==1.1.4
