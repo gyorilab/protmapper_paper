@@ -2,6 +2,7 @@ language: python
 python:
   - "3.6"
 before_install:
+  - pip install cython
   - pip install -r requirements.txt
   - pip install git+https://github.com/indralab/protmapper.git
   - pip install awscli
