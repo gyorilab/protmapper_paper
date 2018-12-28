@@ -20,11 +20,6 @@ install:
   - sudo update-java-alternatives -s java-8-oracle
   - sudo apt-get install oracle-java8-set-default
   - export JAVA_HOME="/usr/lib/jvm/java-8-oracle/"
-  # Make2Graph
-  - git clone https://github.com/lindenb/makefile2graph
-  - cd makefile2graph
-  - make
-  - cd ..
 before_script:
   - python -m protmapper.resources
   - aws s3 cp --recursive s3://protmapper-paper/data/ ./data

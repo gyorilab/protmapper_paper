@@ -3,7 +3,7 @@ PLOTS := plots
 DATA := data
 DEPLOY := ../sitemapper_manuscript/figures/figure_panels
 
-all: fig1 graph
+all: fig1
 
 indra_sites: $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl
 
