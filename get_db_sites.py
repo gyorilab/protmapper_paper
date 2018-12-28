@@ -1,3 +1,4 @@
+import sys
 import pickle
 import itertools
 from collections import Counter, defaultdict
@@ -5,39 +6,34 @@ from indra.databases import uniprot_client
 from indra.tools import assemble_corpus as ac
 from indra.util import read_unicode_csv, write_unicode_csv
 from indra_db.client import get_statements_by_gene_role_type
-from sitemapper import SiteMapper
+from protmapper import ProtMapper
 
 
-def get_db_phos_stmts(reload=False, filename='output/db_phos_stmts.pkl'):
-    if reload is False:
-        with open(filename, 'rb') as f:
-            phos_stmts = pickle.load(f)
-    else:
-        phos_stmts = get_statements_by_gene_role_type(
-                            stmt_type='Phosphorylation', fix_refs=False,
-                            preassembled=False,
-                            with_evidence=True, with_support=False)
-        with open(filename, 'wb') as f:
-            pickle.dump(phos_stmts, f)
+def get_db_phos_stmts(filename):
+    phos_stmts = get_statements_by_gene_role_type(
+                        stmt_type='Phosphorylation', fix_refs=False,
+                        preassembled=False,
+                        with_evidence=True, with_support=False)
+    with open(filename, 'wb') as f:
+        pickle.dump(phos_stmts, f)
     return phos_stmts
 
 
-def preprocess_db_stmts(stmts, prefix='output/db_phos_stmts'):
+def preprocess_db_stmts(stmts, output_file):
     """Take the statements from the database and grounding map them; """
     print("Mapping grounding")
     gmap_stmts = ac.map_grounding(stmts)
-    ac.dump_statements(gmap_stmts, prefix + '_gmap.pkl')
+    #ac.dump_statements(gmap_stmts, prefix + '_gmap.pkl')
     print("Sorting and filtering")
     # Next, eliminate exact duplicates
-    stmts_by_deep_hash = [(s.get_hash(shallow=False), s)
-                          for s in gmap_stmts]
+    stmts_by_deep_hash = [(s.get_hash(shallow=False), s) for s in gmap_stmts]
     stmts_by_deep_hash.sort(key=lambda x: x[0])
     uniq_stmts = []
     for k, group in itertools.groupby(stmts_by_deep_hash, key=lambda x: x[0]):
         uniq_stmts.append(list(group)[0][1])
-    # Filter to statements with position
+    # Filter to statements with residue and position
     site_stmts = [s for s in uniq_stmts if s.residue and s.position]
-    ac.dump_statements(site_stmts, prefix + '_gmap_uniq_pos.pkl')
+    ac.dump_statements(site_stmts, output_file)
     return site_stmts
 
 
@@ -83,11 +79,20 @@ def site_cache_stats():
 
 
 if __name__ == '__main__':
-    """
-    phos_stmts = get_db_phos_stmts(reload=False,
-                                   filename='output/db_phos_stmts.pkl')
-    preproc_stmts = preprocess_db_stmts(phos_stmts,
-                                        prefix='output/db_phos_stmts')
+    # Get 
+    if sys.argv[1] == 'get_phos_stmts':
+        get_db_phos_stmts(sys.argv[2])
+    # Map grounding on 
+    elif sys.argv[1] == 'preprocess_stmts':
+        input_file = sys.argv[2]
+        output_file = sys.argv[3]
+        input_stmts = ac.load_statements(input_file)
+        preproc_stmts = preprocess_db_stmts(input_stmts, output_file)
+    else:
+        print("Argument must be get_phos_stmts or map_grounding.")
+        print(sys.argv)
+        sys.exit(1)
+
     """
     preproc_stmts = \
             ac.load_statements('output/db_phos_stmts_gmap_uniq_pos_enz.pkl')
