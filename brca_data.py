@@ -1,6 +1,7 @@
 import re
 import csv
 import sys
+import pickle
 import numpy as np
 import pandas as pd
 from indra.databases import uniprot_client
@@ -54,6 +55,10 @@ if __name__ == '__main__':
             csvwriter = csv.writer(f, delimiter='\t')
             csvwriter.writerows()
     elif sys.argv[1] == 'site_stats':
+        # Load INDRA statements, sorted by site
+        indra_sites_file = sys.argv[2]
+        with open(indra_sites_file, 'rb') as f:
+            stmts_by_site = pickle.load(f)
         df = pd.read_csv(BRCA_MAPPED, delimiter='\t')
         total_sites = len(df)
         no_up_id = 0
@@ -74,6 +79,11 @@ if __name__ == '__main__':
         print(text)
         with open(sys.argv[2], 'wt') as f:
             f.write(text)
+        # There are multiple uniprot IDs associated with each refseq ID.
+        # To figure out whether it has any annotations, we turn each BRCA
+        # site into a tuple (up_id, res, pos), and look this up in a dict
+        # of sites with their annotations. If there are matches based on
+        # ANY of the uniprot IDs we count that as a match.
     else:
         print("Argument must be one of map_uniprot, site_stats")
         sys.exit(1)

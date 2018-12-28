@@ -84,6 +84,6 @@ $(OUTPUT)/brca_up_mappings.txt: \
 	python brca_data.py map_uniprot
 
 $(OUTPUT)/brca_site_stats.txt: $(OUTPUT)/brca_up_mappings.txt
-	python brca_data.py site_stats $@
+	python brca_data.py site_stats $(OUTPUT)/indra_stmts_by_site.pkl
 
 
