@@ -29,6 +29,6 @@ before_script:
   - python -m protmapper.resources
   - aws s3 cp --recursive s3://protmapper-paper/data/ ./data
   - aws s3 cp s3://protmapper-paper/output/pc_site_cache.pkl ./output/
-  - aws s3 cp s3://protmapper-paper/output/indra_phos_stmts.pkl ./output/
+  #- aws s3 cp s3://protmapper-paper/output/indra_phos_stmts.pkl ./output/
 script:
   - make all
