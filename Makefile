@@ -3,7 +3,9 @@ PLOTS := plots
 DATA := data
 DEPLOY := ../sitemapper_manuscript/figures/figure_panels
 
-all: fig1 graph
+all: indra_sites fig1 graph
+
+indra_sites: $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl
 
 fig1: $(PLOTS)/site_stats_by_site.pdf
 
@@ -41,7 +43,7 @@ $(OUTPUT)/pc_sites_by_db.pkl: \
     $(OUTPUT)/pc_psp_modified_agents.pkl \
     $(OUTPUT)/pc_pid_modified_agents.pkl \
     $(OUTPUT)/pc_reactome_modified_agents.pkl
-	python sitemap_fig.py map_pc_sites
+	python sitemap_fig.py map_pc_sites > /dev/null
 
 # BEL Sites
 $(OUTPUT)/large_corpus_pybel.pkl: $(DATA)/large_corpus.bel
@@ -51,7 +53,7 @@ $(OUTPUT)/bel_mod_agents.pkl: $(OUTPUT)/large_corpus_pybel.pkl
 	python process_bel_large_corpus.py get_pybel_mod_agents
 
 $(OUTPUT)/bel_sites.pkl: $(OUTPUT)/bel_mod_agents.pkl
-	python sitemap_fig.py map_bel_sites
+	python sitemap_fig.py map_bel_sites > /dev/null
 
 $(OUTPUT)/all_db_sites.csv: \
     $(OUTPUT)/bel_sites.pkl \
@@ -60,4 +62,12 @@ $(OUTPUT)/all_db_sites.csv: \
 
 $(PLOTS)/site_stats_by_site.pdf: $(OUTPUT)/all_db_sites.csv
 	python sitemap_fig.py plot_site_stats
+
+# Get phospho statements from INDRA DB/Reading -----------------------
+$(OUTPUT)/indra_phos_stmts.pkl:
+	python get_db_sites.py get_phos_stmts $@
+
+$(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl: $(OUTPUT)/indra_phos_stmts.pkl
+	python get_db_sites.py preprocess_stmts $< $@
+
 
