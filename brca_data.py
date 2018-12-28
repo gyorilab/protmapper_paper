@@ -5,7 +5,7 @@ import pickle
 import numpy as np
 import pandas as pd
 from indra.databases import uniprot_client
-
+from indra.tools import assemble_corpus as ac
 
 BRCA_DATA = 'data/breast_phosphosites.txt'
 UP_MAPPINGS = 'data/HUMAN_9606_idmapping.dat'
@@ -56,13 +56,15 @@ if __name__ == '__main__':
             csvwriter.writerows()
     elif sys.argv[1] == 'site_stats':
         # Load INDRA statements, sorted by site
-        indra_sites_file = sys.argv[2]
-        with open(indra_sites_file, 'rb') as f:
+        indra_stmts_filename = sys.argv[2]
+        with open(indra_stmts_filename, 'rb') as f:
             stmts_by_site = pickle.load(f)
+        # Load the BRCA peptides with uniprot IDs
         df = pd.read_csv(BRCA_MAPPED, delimiter='\t')
         total_sites = len(df)
         no_up_id = 0
         no_valid_up = 0
+        has_stmts = 0
         for gene_name, rs_id, up_id, res, pos, valid in df.values:
             if up_id is np.nan:
                 no_up_id += 1
@@ -72,10 +74,20 @@ if __name__ == '__main__':
                 up_ids = up_id.split('|')
                 if not np.any(valids):
                     no_valid_up += 1
+                else:
+                    has_annot_up_id = False
+                    for u, v in zip(up_ids, valids):
+                        if v and (u, res, str(pos)) in stmts_by_site:
+                            has_annot_up_id = True
+                    if has_annot_up_id:
+                        has_stmts += 1
+                        print("annot", gene_name, res, pos)
         text = ("No UP ID: %d / %d (%.1f)\n" %
                 (no_up_id, total_sites, (100*no_up_id / total_sites)))
         text += ("No valid UP sequence: %d / %d (%.1f)\n" %
                  (no_valid_up, total_sites, (100*no_valid_up / total_sites)))
+        text += ("Annotated in INDRA DB: %d / %d (%.1f)\n" %
+                 (has_stmts, total_sites, (100*has_stmts / total_sites)))
         print(text)
         with open(sys.argv[2], 'wt') as f:
             f.write(text)

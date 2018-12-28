@@ -37,7 +37,7 @@ def preprocess_db_stmts(stmts, output_file):
     return site_stmts
 
 
-def get_stmts_by_site(phos_stmts, filename):
+def get_stmts_by_site(phos_stmts, filename=None):
     # First filter statements to those that have objects with uniprot IDs
     filt_stmts = [s for s in phos_stmts if s.sub.db_refs.get('UP')]
     gene_sites = []
@@ -50,8 +50,9 @@ def get_stmts_by_site(phos_stmts, filename):
             stmts_by_site[site].append(s)
         else:
             stmts_by_site[site] = [s]
-    with open(filename, 'wb') as f:
-        pickle.dump(stmts_by_site, f)
+    if filename:
+        with open(filename, 'wb') as f:
+            pickle.dump(stmts_by_site, f)
     return stmts_by_site
 
 
