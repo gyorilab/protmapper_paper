@@ -3,9 +3,9 @@ PLOTS := plots
 DATA := data
 DEPLOY := ../sitemapper_manuscript/figures/figure_panels
 
-all: fig1
+all: fig1 indra_sites brca
 
-indra_sites: $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl
+indra_sites: $(OUTPUT)/indra_stmts_by_site.pkl
 
 fig1: $(PLOTS)/site_stats_by_site.pdf
 
@@ -71,6 +71,11 @@ $(OUTPUT)/indra_phos_stmts.pkl:
 
 $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl: $(OUTPUT)/indra_phos_stmts.pkl
 	python get_db_sites.py preprocess_stmts $< $@
+
+$(OUTPUT)/indra_stmts_by_site.pkl: \
+    $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl
+	python get_db_sites.py stmts_by_site $< $@
+
 
 # BRCA data ----------------------------------------------------------
 $(OUTPUT)/brca_up_mappings.txt: \

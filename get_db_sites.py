@@ -45,7 +45,7 @@ def get_stmts_by_site(phos_stmts, filename):
     for s in filt_stmts:
         if s.enz is None:
             continue
-        site = (s.sub.db_refs.get('UP'))
+        site = (s.sub.db_refs.get('UP'), s.residue, s.position)
         if site in stmts_by_site:
             stmts_by_site[site].append(s)
         else:
@@ -79,15 +79,20 @@ def site_cache_stats():
 
 
 if __name__ == '__main__':
-    # Get 
+    # Get statements from INDRA database
     if sys.argv[1] == 'get_phos_stmts':
         get_db_phos_stmts(sys.argv[2])
-    # Map grounding on 
+    # Map grounding, remove identical statements
     elif sys.argv[1] == 'preprocess_stmts':
         input_file = sys.argv[2]
         output_file = sys.argv[3]
         input_stmts = ac.load_statements(input_file)
         preproc_stmts = preprocess_db_stmts(input_stmts, output_file)
+    elif sys.argv[1] == 'stmts_by_site':
+        input_file = sys.argv[2]
+        output_file = sys.argv[3]
+        input_stmts = ac.load_statements(input_file)
+        get_stmts_by_site(input_stmts, output_file)
     else:
         print("Argument must be get_phos_stmts or map_grounding.")
         print(sys.argv)
