@@ -9,6 +9,8 @@ indra_sites: $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl
 
 fig1: $(PLOTS)/site_stats_by_site.pdf
 
+brca: $(OUTPUT)/brca_site_stats.txt
+
 # MAKEFILE GRAPH
 graph: makegraph.pdf
 
@@ -69,5 +71,14 @@ $(OUTPUT)/indra_phos_stmts.pkl:
 
 $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl: $(OUTPUT)/indra_phos_stmts.pkl
 	python get_db_sites.py preprocess_stmts $< $@
+
+# BRCA data ----------------------------------------------------------
+$(OUTPUT)/brca_up_mappings.txt: \
+    $(DATA)/breast_phosphosites.txt \
+    $(DATA)/HUMAN_9606_idmapping.dat
+	python brca_data.py map_uniprot
+
+$(OUTPUT)/brca_site_stats.txt: $(OUTPUT)/brca_up_mappings.txt
+	python brca_data.py site_stats $@
 
 
