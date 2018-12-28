@@ -3,7 +3,7 @@ PLOTS := plots
 DATA := data
 DEPLOY := ../sitemapper_manuscript/figures/figure_panels
 
-all: fig1 indra_sites brca
+all: fig1
 
 indra_sites: $(OUTPUT)/indra_stmts_by_site.pkl
 
