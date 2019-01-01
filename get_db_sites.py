@@ -5,11 +5,11 @@ from collections import Counter, defaultdict
 from indra.databases import uniprot_client
 from indra.tools import assemble_corpus as ac
 from indra.util import read_unicode_csv, write_unicode_csv
-from indra_db.client import get_statements_by_gene_role_type
 from protmapper import ProtMapper
 
 
 def get_db_phos_stmts(filename):
+    from indra_db.client import get_statements_by_gene_role_type
     phos_stmts = get_statements_by_gene_role_type(
                         stmt_type='Phosphorylation', fix_refs=False,
                         preassembled=False,
