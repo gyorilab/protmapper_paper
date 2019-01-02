@@ -1,0 +1,24 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - pip install -r requirements.txt
+      - pip install awscli
+      - git clone https://github.com/johnbachman/protmapper_paper.git
+  pre_build:
+    commands:
+      - python -m protmapper.resources
+      - cd protmapper_paper
+      - aws s3 cp --recursive s3://protmapper-paper/data/ ./data
+      - aws s3 cp s3://protmapper-paper/output/pc_site_cache.pkl ./output/
+      - aws s3 cp s3://protmapper-paper/output/indra_phos_stmts.pkl ./output/
+  build:
+    commands:
+      - make all
+artifacts:
+  files:
+    - protmapper_paper/output/*
+    - protmapper_paper/plots/*
+  name: protmapper-paper-$(date +%Y-%m-%d)
+
