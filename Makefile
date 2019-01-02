@@ -38,13 +38,20 @@ clean:
 $(OUTPUT)/pc_psp_modified_agents.pkl: \
     $(DATA)/pc/PathwayCommons10.psp.BIOPAX.owl \
     $(DATA)/pc/PathwayCommons10.reactome.BIOPAX.owl \
-    $(DATA)/pc/PathwayCommons10.pid.BIOPAX.owl
+    $(DATA)/pc/PathwayCommons10.pid.BIOPAX.owl \
+    $(DATA)/Kinase_substrates.owl
 	python get_pc_sites.py
+
+$(OUTPUT)/psp_kinase_substrate_tsv.pkl: \
+    $(DATA)/Kinase_Substrate_Dataset
+	python get_psp_tsv_sites.py
 
 $(OUTPUT)/pc_sites_by_db.pkl: \
     $(OUTPUT)/pc_psp_modified_agents.pkl \
     $(OUTPUT)/pc_pid_modified_agents.pkl \
-    $(OUTPUT)/pc_reactome_modified_agents.pkl
+    $(OUTPUT)/pc_reactome_modified_agents.pkl \
+    $(OUTPUT)/psp_kinase_substrate_biopax.pkl \
+    $(OUTPUT)/psp_kinase_substrate_tsv.pkl
 	python sitemap_fig.py map_pc_sites > /dev/null
 
 # BEL Sites

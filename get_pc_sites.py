@@ -6,13 +6,10 @@ from indra.sources.biopax import pathway_commons_client as pcc
 owl_pattern = 'data/pc/PathwayCommons10.%s.BIOPAX.owl'
 dbs = ['psp', 'pid', 'reactome', 'kegg', 'panther', 'hprd', 'wp']
 
-def get_proteins(mod_feature):
-    # Assume it's a physical entity feature
-    pe = obj.getFeatureOf().toArray()
-    return pe
 
-for db in dbs:
-    owl_file = owl_pattern % db
+
+
+def save_modified_agents(owl_file, output_file):
     print('Reading %s...' % owl_file)
     model = pcc.owl_to_model(owl_file)
     mf_class = bpc._bpimpl('ModificationFeature')
@@ -31,7 +28,7 @@ for db in dbs:
         if not mc or not mc.residue or not mc.position:
             continue
 
-        proteins = get_proteins(obj)
+        proteins = obj.getFeatureOf().toArray()
         if not proteins:
             continue
         for protein in proteins:
@@ -50,5 +47,13 @@ for db in dbs:
                 for contr in controls:
                     agents.append(agent)
 
-    with open('output/pc_%s_modified_agents.pkl' % db, 'wb') as fh:
+    with open(output_file, 'wb') as fh:
         pickle.dump(agents, fh)
+
+if __name__ == '__main__':
+    for db in dbs:
+        owl_file = owl_pattern % db
+        output_file = 'output/pc_%s_modified_agents.pkl' % db
+        save_modified_agents(owl_file, output_file)
+    save_modified_agents('data/Kinase_substrates.owl',
+                         'output/psp_kinase_substrate_biopax.pkl')

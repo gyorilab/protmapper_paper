@@ -335,19 +335,18 @@ if __name__ == '__main__':
     if sys.argv[1] == 'map_pc_sites':
         pm = ProtMapper(use_cache=True, cache_path=CACHE_PATH)
         agent_files = {
-                'hprd': 'pc_hprd_modified_agents.pkl',
-                'kegg': 'pc_kegg_modified_agents.pkl',
-                'panther': 'pc_panther_modified_agents.pkl',
-                'pid': 'pc_pid_modified_agents.pkl',
-                'psp_pc': 'pc_psp_modified_agents.pkl',
-                'psp_biopax': 'psp_kinase_substrate_biopax.pkl',
-                'psp_tsv': 'psp_kinase_substrate_tsv.pkl',
-                'reactome': 'pc_reactome_modified_agents.pkl',
-                'wp': 'pc_wp_modified_agents.pkl'
+                'hprd': 'output/pc_hprd_modified_agents.pkl',
+                'kegg': 'output/pc_kegg_modified_agents.pkl',
+                'panther': 'output/pc_panther_modified_agents.pkl',
+                'pid': 'output/pc_pid_modified_agents.pkl',
+                'psp_biopax': 'output/psp_kinase_substrate_biopax.pkl',
+                'psp_pc': 'output/pc_psp_modified_agents.pkl',
+                'psp_tsv': 'output/psp_kinase_substrate_tsv.pkl',
+                'reactome': 'output/pc_reactome_modified_agents.pkl',
+                'wp': 'output/pc_wp_modified_agents.pkl'
                 }
         all_sites = {}
         for db_name, agent_file in agent_files.items():
-            db_name = agent_file.split('_')[1]
             sites = map_agents(agent_file, pm, db_name)
             all_sites[db_name] = sites
         with open(PC_SITES_BY_DB, 'wb') as f:
