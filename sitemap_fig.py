@@ -7,6 +7,8 @@ from os.path import join as pjoin
 from collections import OrderedDict, Counter, namedtuple, defaultdict
 import numpy as np
 import pandas as pd
+import matplotlib
+matplotlib.use('agg')
 import seaborn as sns
 from matplotlib import pyplot as plt
 from indra.tools import assemble_corpus as ac
@@ -332,9 +334,19 @@ if __name__ == '__main__':
     # Map sites from Pathway Commons
     if sys.argv[1] == 'map_pc_sites':
         pm = ProtMapper(use_cache=True, cache_path=CACHE_PATH)
-        agent_files = glob.glob('output/pc_*_modified_agents.pkl')
+        agent_files = {
+                'hprd': 'pc_hprd_modified_agents.pkl',
+                'kegg': 'pc_kegg_modified_agents.pkl',
+                'panther': 'pc_panther_modified_agents.pkl',
+                'pid': 'pc_pid_modified_agents.pkl',
+                'psp_pc': 'pc_psp_modified_agents.pkl',
+                'psp_biopax': 'psp_kinase_substrate_biopax.pkl',
+                'psp_tsv': 'psp_kinase_substrate_tsv.pkl',
+                'reactome': 'pc_reactome_modified_agents.pkl',
+                'wp': 'pc_wp_modified_agents.pkl'
+                }
         all_sites = {}
-        for agent_file in agent_files:
+        for db_name, agent_file in agent_files.items():
             db_name = agent_file.split('_')[1]
             sites = map_agents(agent_file, pm, db_name)
             all_sites[db_name] = sites

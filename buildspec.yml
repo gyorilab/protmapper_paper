@@ -19,7 +19,7 @@ phases:
       - make all
 artifacts:
   files:
-    - protmapper_paper/output/*
-    - protmapper_paper/plots/*
+    - output/*
+    - plots/*
   name: protmapper-paper-$(date +%Y-%m-%d)
 
