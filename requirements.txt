@@ -5,3 +5,4 @@ numpy
 indra
 pybel
 pyjnius==1.1.4
+git+https://github.com/indralab/protmapper.git
