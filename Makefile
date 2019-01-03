@@ -1,7 +1,7 @@
 OUTPUT := output
 PLOTS := plots
 DATA := data
-DEPLOY := ../sitemapper_manuscript/figures/figure_panels
+DEPLOY := ../protmapper_manuscript/figures/figure_panels
 
 all: fig1 indra_sites brca
 
@@ -21,7 +21,7 @@ makegraph.dot: Makefile
 	make -Bnd | make2graph > makegraph.dot
 
 deploy:
-	rsync -av $(OUTPUT)/*.pdf $(DEPLOY)
+	rsync -av $(PLOTS)/*.pdf $(DEPLOY)
 
 clean:
 	cd $(OUTPUT); rm -rf *
