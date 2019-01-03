@@ -35,23 +35,24 @@ clean:
 
 # FIG1 --------------------------------------------------------------
 # PC Sites
-$(OUTPUT)/pc_psp_modified_agents.pkl: \
-    $(DATA)/pc/PathwayCommons10.psp.BIOPAX.owl \
-    $(DATA)/pc/PathwayCommons10.reactome.BIOPAX.owl \
-    $(DATA)/pc/PathwayCommons10.pid.BIOPAX.owl \
-    $(DATA)/Kinase_substrates.owl
-	python get_pc_sites.py
+$(OUTPUT)/biopax/%.pkl: $(DATA)/biopax/%.owl
+	python get_pc_sites.py $< $@
 
 $(OUTPUT)/psp_kinase_substrate_tsv.pkl: \
     $(DATA)/Kinase_Substrate_Dataset
 	python get_psp_tsv_sites.py
 
-$(OUTPUT)/pc_sites_by_db.pkl: \
-    $(OUTPUT)/pc_psp_modified_agents.pkl \
-    $(OUTPUT)/pc_pid_modified_agents.pkl \
-    $(OUTPUT)/pc_reactome_modified_agents.pkl \
-    $(OUTPUT)/psp_kinase_substrate_biopax.pkl \
-    $(OUTPUT)/psp_kinase_substrate_tsv.pkl
+$(OUTPUT)/biopax_sites_by_db.pkl: \
+    $(OUTPUT)/biopax/PathwayCommons10.hprd.BIOPAX.pkl \
+    $(OUTPUT)/biopax/PathwayCommons10.kegg.BIOPAX.pkl \
+    $(OUTPUT)/biopax/PathwayCommons10.panther.BIOPAX.pkl \
+    $(OUTPUT)/biopax/PathwayCommons10.pid.BIOPAX.pkl \
+    $(OUTPUT)/biopax/PathwayCommons10.psp.BIOPAX.pkl \
+    $(OUTPUT)/biopax/PathwayCommons10.reactome.BIOPAX.pkl \
+    $(OUTPUT)/biopax/PathwayCommons10.wp.BIOPAX.pkl \
+    $(OUTPUT)/biopax/Kinase_substrates.pkl \
+    $(OUTPUT)/psp_kinase_substrate_tsv.pkl \
+    $(OUTPUT)/biopax/Homo_sapiens.pkl
 	python sitemap_fig.py map_pc_sites > /dev/null
 
 # BEL Sites
@@ -66,7 +67,7 @@ $(OUTPUT)/bel_sites.pkl: $(OUTPUT)/bel_mod_agents.pkl
 
 $(OUTPUT)/all_db_sites.csv: \
     $(OUTPUT)/bel_sites.pkl \
-    $(OUTPUT)/pc_sites_by_db.pkl
+    $(OUTPUT)/biopax_sites_by_db.pkl
 	python sitemap_fig.py create_site_csv
 
 $(PLOTS)/site_stats_by_site.pdf: $(OUTPUT)/all_db_sites.csv
