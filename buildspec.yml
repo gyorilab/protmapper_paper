@@ -7,6 +7,8 @@ phases:
       - pip install -r requirements.txt
       - pip install awscli
       - git clone https://github.com/johnbachman/protmapper_paper.git
+      - git clone https://github.com/indralab/indra_db.git
+      - export PYTHONPATH=$PYTHONPATH:`pwd`/indra_db
   pre_build:
     commands:
       - python -m protmapper.resources
