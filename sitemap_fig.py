@@ -327,7 +327,7 @@ if __name__ == '__main__':
 
     # Constants
     CACHE_PATH = 'output/pc_site_cache.pkl'
-    PC_SITES_BY_DB = 'output/pc_sites_by_db.pkl'
+    BIOPAX_SITES_BY_DB = 'output/biopax_sites_by_db.pkl'
     BEL_AGENTS = 'output/bel_mod_agents.pkl'
     BEL_SITES = 'output/bel_sites.pkl'
     ALL_SITES_CSV = 'output/all_db_sites.csv'
@@ -335,21 +335,22 @@ if __name__ == '__main__':
     if sys.argv[1] == 'map_pc_sites':
         pm = ProtMapper(use_cache=True, cache_path=CACHE_PATH)
         agent_files = {
-                'hprd': 'output/pc_hprd_modified_agents.pkl',
-                'kegg': 'output/pc_kegg_modified_agents.pkl',
-                'panther': 'output/pc_panther_modified_agents.pkl',
-                'pid': 'output/pc_pid_modified_agents.pkl',
-                'psp_biopax': 'output/psp_kinase_substrate_biopax.pkl',
-                'psp_pc': 'output/pc_psp_modified_agents.pkl',
-                'psp_tsv': 'output/psp_kinase_substrate_tsv.pkl',
-                'reactome': 'output/pc_reactome_modified_agents.pkl',
-                'wp': 'output/pc_wp_modified_agents.pkl'
-                }
+            'hprd': 'output/biopax/PathwayCommons10.hprd.BIOPAX.pkl',
+            'kegg': 'output/biopax/PathwayCommons10.kegg.BIOPAX.pkl',
+            'panther': 'output/biopax/PathwayCommons10.panther.BIOPAX.pkl',
+            'pid': 'output/biopax/PathwayCommons10.pid.BIOPAX.pkl',
+            'psp_pc': 'output/biopax/PathwayCommons10.psp.BIOPAX.pkl',
+            'pc_tsv': 'output/psp_kinase_substrate_tsv.pkl',
+            'reactome': 'output/biopax/PathwayCommons10.reactome.BIOPAX.pkl',
+            'wp': 'output/biopax/PathwayCommons10.wp.BIOPAX.pkl',
+            'psp_biopax': 'output/biopax/Kinase_substrates.pkl',
+            #'reactome_human': 'output/biopax/Homo_sapiens.pkl',
+        }
         all_sites = {}
         for db_name, agent_file in agent_files.items():
             sites = map_agents(agent_file, pm, db_name)
             all_sites[db_name] = sites
-        with open(PC_SITES_BY_DB, 'wb') as f:
+        with open(BIOPAX_SITES_BY_DB, 'wb') as f:
             pickle.dump(all_sites, f)
         pm.save_cache()
     # Map sites from BEL large corpus
@@ -365,8 +366,8 @@ if __name__ == '__main__':
     # databases
     elif sys.argv[1] == 'create_site_csv':
         all_sites = []
-        # Load PC sites
-        with open(PC_SITES_BY_DB, 'rb') as f:
+        # Load Biopax sites
+        with open(BIOPAX_SITES_BY_DB, 'rb') as f:
             pc_sites = pickle.load(f)
         for db, sites in pc_sites.items():
             for ms, freq in sites:
