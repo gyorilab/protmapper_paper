@@ -18,9 +18,12 @@ from indra.tools import assemble_corpus as ac
 
 from protmapper import ProtMapper
 
-
-#pf.set_fig_params()
-
+# Constants
+CACHE_PATH = 'output/pc_site_cache.pkl'
+BIOPAX_SITES_BY_DB = 'output/biopax_sites_by_db.pkl'
+BEL_AGENTS = 'output/bel_mod_agents.pkl'
+BEL_SITES = 'output/bel_sites.pkl'
+ALL_SITES_CSV = 'output/all_db_sites.csv'
 
 
 def map_statements(stmts, source, outfile=None):
@@ -291,7 +294,6 @@ def make_bar_plot(site_info, num_genes=120):
 # ---------------------
 
 
-
 def plot_site_count_dist(sites, num_sites=240):
     # Plot site frequencies, colored by validity
     sites.sort(key=lambda s: s[1], reverse=True)
@@ -309,125 +311,91 @@ def plot_site_count_dist(sites, num_sites=240):
     plt.show()
 
 
+def map_pc_sites():
+    pm = ProtMapper(use_cache=True, cache_path=CACHE_PATH)
+    agent_files = {
+        'hprd': 'output/biopax/PathwayCommons10.hprd.BIOPAX.pkl',
+        'kegg': 'output/biopax/PathwayCommons10.kegg.BIOPAX.pkl',
+        'panther': 'output/biopax/PathwayCommons10.panther.BIOPAX.pkl',
+        'pid': 'output/biopax/PathwayCommons10.pid.BIOPAX.pkl',
+        'psp_pc': 'output/biopax/PathwayCommons10.psp.BIOPAX.pkl',
+        'pc_tsv': 'output/psp_kinase_substrate_tsv.pkl',
+        'reactome': 'output/biopax/PathwayCommons10.reactome.BIOPAX.pkl',
+        'wp': 'output/biopax/PathwayCommons10.wp.BIOPAX.pkl',
+        'psp_biopax': 'output/biopax/Kinase_substrates.pkl',
+        #'reactome_human': 'output/biopax/Homo_sapiens.pkl',
+    }
+    all_sites = {}
+    for db_name, agent_file in agent_files.items():
+        sites = map_agents(agent_file, pm, db_name)
+        all_sites[db_name] = sites
+    with open(BIOPAX_SITES_BY_DB, 'wb') as f:
+        pickle.dump(all_sites, f)
+    pm.save_cache()
+
+
+def map_bel_sites():
+    map_bel_sites()
+    with open(BEL_AGENTS, 'rb') as f:
+        bel_agents = pickle.load(f)
+    pm = ProtMapper(use_cache=True, cache_path=CACHE_PATH)
+    bel_sites = map_agents(BEL_AGENTS, pm, 'bel')
+    with open(BEL_SITES, 'wb') as f:
+        pickle.dump(bel_sites, f)
+    pm.save_cache()
+
+
+def create_site_csv():
+    all_sites = []
+    # Load Biopax sites
+    with open(BIOPAX_SITES_BY_DB, 'rb') as f:
+        pc_sites = pickle.load(f)
+    for db, sites in pc_sites.items():
+        for ms, freq in sites:
+            all_sites.append(ms_to_si(db, freq, ms))
+    # Load BEL sites
+    with open(BEL_SITES, 'rb') as f:
+        bel_sites = pickle.load(f)
+    for ms, freq in bel_sites:
+        all_sites.append(ms_to_si('bel', freq, ms))
+    header = [[field.upper() for field in all_sites[0]._asdict().keys()]]
+    rows = header + replace_nones(all_sites)
+    write_unicode_csv(ALL_SITES_CSV, rows)
+
+
+def plot_site_stats():
+    site_df = pd.read_csv(ALL_SITES_CSV)
+    # Drop the two rows with error_code (invalid gene names in BEL)
+    site_df = site_df[site_df.ERROR_CODE.isna()]
+    results = print_stats(site_df)
+    # Now make figures for the sites
+    by_site = results[['Valid Sites', 'Mapped Sites', 'Unmapped Sites']]
+    by_site_pct = results[['Valid Sites Pct.', 'Mapped Sites Pct. Total',
+                           'Unmapped Sites Pct. Total']]
+    by_occ = results[['Valid Occ.', 'Mapped Occ.', 'Unmapped Occ.']]
+    by_occ_pct = results[['Valid Occ. Pct.', 'Mapped Occ. Pct. Total',
+                          'Unmapped Occ. Pct. Total']]
+    for df, kind in ((by_site, 'by_site'), (by_site_pct, 'by_site_pct'),
+                     (by_occ, 'by_occ'), (by_occ_pct, 'by_occ_pct')):
+        plt.figure()
+        df.plot(kind='bar', stacked=True)
+        plt.subplots_adjust(bottom=0.2)
+        plt.savefig('plots/site_stats_%s.pdf' % kind)
+
+
 if __name__ == '__main__':
-
-    # This script does two things:
-    # 1) Plots stats on invalid sites from databases
-    #    - showing their frequency
-    #       - per site
-    #       - per reaction
-    # 2) Showing the fraction of the invalid sites in DBs that are mapped
-    #    - per site
-    #    - per reaction
-    # 3) Showing accuracy:
-    #    - that the mapped sites are likely legit
-    #    - and that the unmapped sites are likely errors
-
-    # Load the agent files
-
-    # Constants
-    CACHE_PATH = 'output/pc_site_cache.pkl'
-    BIOPAX_SITES_BY_DB = 'output/biopax_sites_by_db.pkl'
-    BEL_AGENTS = 'output/bel_mod_agents.pkl'
-    BEL_SITES = 'output/bel_sites.pkl'
-    ALL_SITES_CSV = 'output/all_db_sites.csv'
     # Map sites from Pathway Commons
     if sys.argv[1] == 'map_pc_sites':
-        pm = ProtMapper(use_cache=True, cache_path=CACHE_PATH)
-        agent_files = {
-            'hprd': 'output/biopax/PathwayCommons10.hprd.BIOPAX.pkl',
-            'kegg': 'output/biopax/PathwayCommons10.kegg.BIOPAX.pkl',
-            'panther': 'output/biopax/PathwayCommons10.panther.BIOPAX.pkl',
-            'pid': 'output/biopax/PathwayCommons10.pid.BIOPAX.pkl',
-            'psp_pc': 'output/biopax/PathwayCommons10.psp.BIOPAX.pkl',
-            'pc_tsv': 'output/psp_kinase_substrate_tsv.pkl',
-            'reactome': 'output/biopax/PathwayCommons10.reactome.BIOPAX.pkl',
-            'wp': 'output/biopax/PathwayCommons10.wp.BIOPAX.pkl',
-            'psp_biopax': 'output/biopax/Kinase_substrates.pkl',
-            #'reactome_human': 'output/biopax/Homo_sapiens.pkl',
-        }
-        all_sites = {}
-        for db_name, agent_file in agent_files.items():
-            sites = map_agents(agent_file, pm, db_name)
-            all_sites[db_name] = sites
-        with open(BIOPAX_SITES_BY_DB, 'wb') as f:
-            pickle.dump(all_sites, f)
-        pm.save_cache()
+        map_pc_sites()
     # Map sites from BEL large corpus
     elif sys.argv[1] == 'map_bel_sites':
-        with open(BEL_AGENTS, 'rb') as f:
-            bel_agents = pickle.load(f)
-        pm = ProtMapper(use_cache=True, cache_path=CACHE_PATH)
-        bel_sites = map_agents(BEL_AGENTS, pm, 'bel')
-        with open(BEL_SITES, 'wb') as f:
-            pickle.dump(bel_sites, f)
-        pm.save_cache()
+        map_bel_sites()
     # Create a single CSV file containing information about all sites from
     # databases
     elif sys.argv[1] == 'create_site_csv':
-        all_sites = []
-        # Load Biopax sites
-        with open(BIOPAX_SITES_BY_DB, 'rb') as f:
-            pc_sites = pickle.load(f)
-        for db, sites in pc_sites.items():
-            for ms, freq in sites:
-                all_sites.append(ms_to_si(db, freq, ms))
-        # Load BEL sites
-        with open(BEL_SITES, 'rb') as f:
-            bel_sites = pickle.load(f)
-        for ms, freq in bel_sites:
-            all_sites.append(ms_to_si('bel', freq, ms))
-        header = [[field.upper() for field in all_sites[0]._asdict().keys()]]
-        rows = header + replace_nones(all_sites)
-        write_unicode_csv(ALL_SITES_CSV, rows)
+        create_site_csv()
     # Load the CSV file and plot site statistics
     elif sys.argv[1] == 'plot_site_stats':
-        site_df = pd.read_csv(ALL_SITES_CSV)
-        # Drop the two rows with error_code (invalid gene names in BEL)
-        site_df = site_df[site_df.ERROR_CODE.isna()]
-        results = print_stats(site_df)
-        # Now make figures for the sites
-        #for source, sites in pc_sites.items():
-        #    print("Stats for %s -------------" % source)
-        #    print_stats(sites)
-        # Now load BEL sites
-        #print("Stats for %s -------------" % 'BEL')
-        #print_stats(bel_sites)
-        # By site
-        by_site = results[['Valid Sites', 'Mapped Sites', 'Unmapped Sites']]
-        by_site_pct = results[['Valid Sites Pct.', 'Mapped Sites Pct. Total',
-                               'Unmapped Sites Pct. Total']]
-        by_occ = results[['Valid Occ.', 'Mapped Occ.', 'Unmapped Occ.']]
-        by_occ_pct = results[['Valid Occ. Pct.', 'Mapped Occ. Pct. Total',
-                              'Unmapped Occ. Pct. Total']]
-        for df, kind in ((by_site, 'by_site'), (by_site_pct, 'by_site_pct'),
-                         (by_occ, 'by_occ'), (by_occ_pct, 'by_occ_pct')):
-            plt.figure()
-            df.plot(kind='bar', stacked=True)
-            plt.subplots_adjust(bottom=0.2)
-            plt.savefig('plots/site_stats_%s.pdf' % kind)
+        plot_site_stats()
     else:
         pass
-
-    """
-    outf = '../phase3_eval/output'
-    prior_stmts = ac.load_statements(pjoin(outf, 'prior.pkl'))
-    site_info = map_statements(prior_stmts, source='prior',
-                               outfile='prior_sites.csv')
-
-    #reach_stmts = ac.load_statements(pjoin(outf, 'phase3_stmts.pkl'))
-    #stmts = prior_stmts
-    #stmts = reach_stmts
-    #stmts = ac.map_grounding(stmts, save=pjoin(outf, 'gmapped_stmts.pkl'))
-    #stmts = ac.load_statements(pjoin(outf, 'gmapped_stmts.pkl'))
-
-    sys.exit()
-
-    #valid, sites, sm = get_incorrect_sites(do_methionine_offset=True,
-    #                             do_orthology_mapping=True,
-    #                             do_isoform_mapping=True)
-    #with open('sm.pkl', 'wb') as f:
-    #    pickle.dump((sm._cache, sm._sitecount), f)
-    #plot_site_count_dist(sm)
-    #gene_counts = make_bar_plot(sites)
-    """
