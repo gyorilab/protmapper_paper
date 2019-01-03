@@ -6,7 +6,7 @@ from indra.databases import uniprot_client
 from indra.tools import assemble_corpus as ac
 from indra.util import read_unicode_csv, write_unicode_csv
 from protmapper import ProtMapper
-
+from sitemap_fig import ms_to_si, CACHE_PATH
 
 def get_db_phos_stmts(filename):
     from indra_db.client import get_statements_by_gene_role_type
@@ -56,6 +56,33 @@ def get_stmts_by_site(phos_stmts, filename=None):
     return stmts_by_site
 
 
+def get_reader_sites(input_file):
+    input_stmts = ac.load_statements(input_file)
+    readers = ('reach', 'sparser')
+    pm = ProtMapper(use_cache=True, cache_path=CACHE_PATH)
+    sites_by_reader = {}
+    for reader in readers:
+        sites = []
+        reader_stmts = [s for s in input_stmts
+                        if s.evidence[0].source_api == reader]
+        for s in reader_stmts:
+            up_id = s.sub.db_refs.get('UP')
+            if up_id is None or s.residue is None or s.position is None:
+                continue
+            site = (up_id, s.residue, s.position)
+            ms = pm.map_to_human_ref(up_id, 'uniprot', s.residue, s.position)
+            sites.append(ms)
+        site_ctr = Counter(sites)
+        sites_by_reader[reader] = site_ctr
+    all_sites = []
+    for db, sites in sites_by_reader.items():
+        for ms, freq in sites.items():
+            all_sites.append(ms_to_si(reader, freq, ms))
+    header = [[field.upper() for field in all_sites[0]._asdict().keys()]]
+    rows = header + replace_nones(all_sites)
+    write_unicode_csv('output/reader_sites.csv', rows)
+
+
 def site_cache_stats():
     sm = SiteMapper(use_cache=True)
     ms_desc_list = []
@@ -94,6 +121,9 @@ if __name__ == '__main__':
         output_file = sys.argv[3]
         input_stmts = ac.load_statements(input_file)
         get_stmts_by_site(input_stmts, output_file)
+    elif sys.argv[1] == 'reader_sites':
+        input_file = sys.argv[2]
+        get_reader_sites(input_file)
     else:
         print("Argument must be get_phos_stmts or map_grounding.")
         print(sys.argv)
