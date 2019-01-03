@@ -1,12 +1,8 @@
+import sys
 import pickle
 from indra.statements import Agent, ModCondition
 from indra.sources.biopax import processor as bpc
 from indra.sources.biopax import pathway_commons_client as pcc
-
-owl_pattern = 'data/pc/PathwayCommons10.%s.BIOPAX.owl'
-dbs = ['psp', 'pid', 'reactome', 'kegg', 'panther', 'hprd', 'wp']
-
-
 
 
 def save_modified_agents(owl_file, output_file):
@@ -51,9 +47,16 @@ def save_modified_agents(owl_file, output_file):
         pickle.dump(agents, fh)
 
 if __name__ == '__main__':
+    owl_file = sys.argv[1]
+    pkl_file = sys.argv[2]
+    save_modified_agents(owl_file, pkl_file)
+    """
     for db in dbs:
         owl_file = owl_pattern % db
         output_file = 'output/pc_%s_modified_agents.pkl' % db
         save_modified_agents(owl_file, output_file)
     save_modified_agents('data/Kinase_substrates.owl',
                          'output/psp_kinase_substrate_biopax.pkl')
+    save_modified_agents('data/reactome/Homo_sapiens.owl',
+                         'output/reactome_human.pkl')
+    """
