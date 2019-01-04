@@ -17,6 +17,8 @@ phases:
       - aws s3 cp s3://protmapper-paper/output/pc_site_cache.pkl ./output/ > /dev/null
   build:
     commands:
+      - echo $AWS_DEFAULT_REGION
+      - echo $INDRADBPRIMARY
       - make all
 artifacts:
   files:
