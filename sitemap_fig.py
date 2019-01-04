@@ -23,6 +23,7 @@ CACHE_PATH = 'output/pc_site_cache.pkl'
 BIOPAX_SITES_BY_DB = 'output/biopax_sites_by_db.pkl'
 BEL_AGENTS = 'output/bel_mod_agents.pkl'
 BEL_SITES = 'output/bel_sites.pkl'
+READER_SITES = 'output/reader_sites.pkl'
 ALL_SITES_CSV = 'output/all_db_sites.csv'
 
 
@@ -335,7 +336,6 @@ def map_pc_sites():
 
 
 def map_bel_sites():
-    map_bel_sites()
     with open(BEL_AGENTS, 'rb') as f:
         bel_agents = pickle.load(f)
     pm = ProtMapper(use_cache=True, cache_path=CACHE_PATH)
@@ -358,14 +358,20 @@ def create_site_csv():
         bel_sites = pickle.load(f)
     for ms, freq in bel_sites:
         all_sites.append(ms_to_si('bel', freq, ms))
+    # Load sites from reading
+    with open(READER_SITES, 'rb') as f:
+        sites_by_reader = pickle.load(f)
+    for reader, sites in sites_by_reader.items():
+        for ms, freq in sites.items():
+            all_sites.append(ms_to_si(reader, freq, ms))
     header = [[field.upper() for field in all_sites[0]._asdict().keys()]]
     rows = header + replace_nones(all_sites)
     write_unicode_csv(ALL_SITES_CSV, rows)
 
 
-def plot_site_stats():
-    site_df = pd.read_csv(ALL_SITES_CSV)
-    # Drop the two rows with error_code (invalid gene names in BEL)
+def plot_site_stats(csv_file):
+    site_df = pd.read_csv(csv_file)
+    # Drop rows with error_code (invalid gene names in BEL)
     site_df = site_df[site_df.ERROR_CODE.isna()]
     results = print_stats(site_df)
     # Now make figures for the sites
@@ -396,6 +402,6 @@ if __name__ == '__main__':
         create_site_csv()
     # Load the CSV file and plot site statistics
     elif sys.argv[1] == 'plot_site_stats':
-        plot_site_stats()
+        plot_site_stats(ALL_SITES_CSV)
     else:
         pass

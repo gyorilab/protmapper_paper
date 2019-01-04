@@ -3,13 +3,11 @@ PLOTS := plots
 DATA := data
 DEPLOY := ../protmapper_manuscript/figures/figure_panels
 
-all: indra_sites fig1 brca
+all: fig1 brca
 
-indra_sites: \
-    $(OUTPUT)/indra_stmts_by_site.pkl \
-    $(OUTPUT)/reader_sites.csv
+fig1: indra_sites $(PLOTS)/site_stats_by_site.pdf
 
-fig1: $(PLOTS)/site_stats_by_site.pdf
+indra_sites: $(OUTPUT)/indra_stmts_by_site.pkl
 
 brca: $(OUTPUT)/brca_site_stats.txt
 
@@ -34,6 +32,18 @@ clean:
 #$(DATA)/PathwayCommons9.All.hgnc.txt:
 #	wget -P $(DATA) http://www.pathwaycommons.org/archives/PC2/v9/PathwayCommons9.All.hgnc.txt.gz
 #	gunzip $@
+#
+# Get phospho statements from INDRA DB/Reading -----------------------
+$(OUTPUT)/indra_phos_stmts.pkl:
+	python get_db_sites.py get_phos_stmts $@
+
+$(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl: $(OUTPUT)/indra_phos_stmts.pkl
+	python get_db_sites.py preprocess_stmts $< $@
+
+$(OUTPUT)/indra_stmts_by_site.pkl: \
+    $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl
+	python get_db_sites.py stmts_by_site $< $@
+
 
 # FIG1 --------------------------------------------------------------
 # PC Sites
@@ -67,27 +77,20 @@ $(OUTPUT)/bel_mod_agents.pkl: $(OUTPUT)/large_corpus_pybel.pkl
 $(OUTPUT)/bel_sites.pkl: $(OUTPUT)/bel_mod_agents.pkl
 	python sitemap_fig.py map_bel_sites > /dev/null
 
+# Reader Sites
+$(OUTPUT)/reader_sites.pkl: $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl
+	python get_db_sites.py reader_sites $<
+
+# All sites combined into a single dataframe
 $(OUTPUT)/all_db_sites.csv: \
     $(OUTPUT)/bel_sites.pkl \
-    $(OUTPUT)/biopax_sites_by_db.pkl
+    $(OUTPUT)/biopax_sites_by_db.pkl \
+    $(OUTPUT)/reader_sites.pkl
 	python sitemap_fig.py create_site_csv
 
+# Plots on correctness/mappability
 $(PLOTS)/site_stats_by_site.pdf: $(OUTPUT)/all_db_sites.csv
 	python sitemap_fig.py plot_site_stats
-
-# Get phospho statements from INDRA DB/Reading -----------------------
-$(OUTPUT)/indra_phos_stmts.pkl:
-	python get_db_sites.py get_phos_stmts $@
-
-$(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl: $(OUTPUT)/indra_phos_stmts.pkl
-	python get_db_sites.py preprocess_stmts $< $@
-
-$(OUTPUT)/indra_stmts_by_site.pkl: \
-    $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl
-	python get_db_sites.py stmts_by_site $< $@
-
-$(OUTPUT)/reader_sites.csv: $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl
-	python get_db_sites.py reader_sites $<
 
 
 # BRCA data ----------------------------------------------------------
