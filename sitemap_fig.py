@@ -381,10 +381,19 @@ def plot_site_stats(csv_file):
     by_occ = results[['Valid Occ.', 'Mapped Occ.', 'Unmapped Occ.']]
     by_occ_pct = results[['Valid Occ. Pct.', 'Mapped Occ. Pct. Total',
                           'Unmapped Occ. Pct. Total']]
+    by_occ_corr = results[['Valid Occ.', 'Invalid Occ.']]
+    by_occ_corr_pct = results[['Valid Occ. Pct.', 'Invalid Occ. Pct.']]
+
     for df, kind in ((by_site, 'by_site'), (by_site_pct, 'by_site_pct'),
                      (by_occ, 'by_occ'), (by_occ_pct, 'by_occ_pct')):
         plt.figure()
-        df.plot(kind='bar', stacked=True)
+        df.plot(kind='bar', stacked=True, color=['blue', 'green', 'orange'])
+        plt.subplots_adjust(bottom=0.2)
+        plt.savefig('plots/site_stats_%s.pdf' % kind)
+    for df, kind in ((by_occ_corr, 'by_occ_corr'),
+                     (by_occ_corr_pct, 'by_occ_corr_pct')):
+        plt.figure()
+        df.plot(kind='bar', stacked=True, color=['blue', 'orange'])
         plt.subplots_adjust(bottom=0.2)
         plt.savefig('plots/site_stats_%s.pdf' % kind)
 
