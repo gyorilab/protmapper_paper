@@ -15,13 +15,11 @@ from indra.databases import hgnc_client, uniprot_client
 site_list = []
 
 filename_tc  = "Mature_Neuron_MT_pMS_Stabilizer1_2_time_course_ys.xlsx"
-df_tc = pd.read_excel(join('ms_data', filename_tc))
+df_tc = pd.read_excel(join('data', filename_tc))
 
 p = lambda x: x.split("|")[1]
 
 df_tc["UniprotId"] = df_tc["Protein Id"].apply(p)
-
-import ipdb; ipdb.set_trace()
 
 df_cols = df_tc[['site_id', 'UniprotId', 'Site Position', 'Motif']]
 
@@ -44,12 +42,20 @@ for site_id, up_id, pos, motif in df_cols.values:
 
 write_unicode_csv('tubulin_sites.txt', sites, delimiter=',')
 
-iso_sites = [s for s in sites if '-' in s[1]]
+iso_sites = []
+for site_tuple in sites:
+    s = site_tuple[1]
+    split_id = s.split('-')
+    if len(split_id) == 1 or split_id[1] == '1':
+        continue
+    else:
+        iso_sites.append(site_tuple)
+
 iso_only = []
 pos_valid_in_ref = []
 mappable_in_ref = []
 
-for site in iso_sites[0:200]:
+for site in iso_sites:
     site_id, up_id, res, pos, motif = site
     ref_iso = up_id.split('-')[0]
     ref_seq = uniprot_client.get_sequence(ref_iso)
