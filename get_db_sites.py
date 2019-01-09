@@ -58,7 +58,6 @@ def get_stmts_by_site(phos_stmts, filename=None):
 
 def get_reader_sites(input_file):
     input_stmts = ac.load_statements(input_file)
-    input_stmts = input_stmts[:2000]
     readers = ('reach', 'sparser')
     pm = ProtMapper(use_cache=True, cache_path=CACHE_PATH)
     sites_by_reader = {}
@@ -72,6 +71,8 @@ def get_reader_sites(input_file):
             up_id = s.sub.db_refs.get('UP')
             # Filter to stmts with substrate UP ID, residue and position
             if up_id is None or s.residue is None or s.position is None:
+                continue
+            if s.residue not in ('S', 'T', 'Y'):
                 continue
             site = (up_id, s.residue, s.position)
             # Get the mapped site for the residue
