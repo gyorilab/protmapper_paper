@@ -102,6 +102,6 @@ $(OUTPUT)/brca_up_mappings.txt: \
 $(OUTPUT)/brca_site_stats.txt: \
     $(OUTPUT)/indra_stmts_by_site.pkl \
     $(OUTPUT)/brca_up_mappings.txt
-	python brca_data.py site_stats $<
+	python brca_data.py site_stats $< $@
 
 

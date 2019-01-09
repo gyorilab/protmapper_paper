@@ -4,8 +4,8 @@ import sys
 import pickle
 import numpy as np
 import pandas as pd
-from indra.databases import uniprot_client, hgnc_client
 from indra.tools import assemble_corpus as ac
+from indra.databases import uniprot_client, hgnc_client
 from protmapper import ProtMapper
 
 
@@ -56,11 +56,12 @@ if __name__ == '__main__':
                 brca_data.append(site)
         with open(BRCA_MAPPED, 'wt') as f:
             csvwriter = csv.writer(f, delimiter='\t')
-            csvwriter.writerows()
+            csvwriter.writerows(brca_data)
     elif sys.argv[1] == 'site_stats':
         pm = ProtMapper()
         # Load INDRA statements, sorted by site
         indra_stmts_filename = sys.argv[2]
+        output_filename = sys.argv[3]
         with open(indra_stmts_filename, 'rb') as f:
             stmts_by_site = pickle.load(f)
         # Load the BRCA peptides with uniprot IDs
@@ -73,9 +74,9 @@ if __name__ == '__main__':
         iso_id_but_pep_in_canon = 0
         counter = 0
         values = list(df.values)
-        import random
-        random.shuffle(values)
-        values = values # values[0:2000]
+        #import random
+        #random.shuffle(values)
+        #values = values # values[0:2000]
         total_sites = len(values)
         for gene_name, rs_id, up_id, res, pos, valid in values:
             counter += 1
@@ -158,10 +159,11 @@ if __name__ == '__main__':
                                     has_annot_map_up_id = True
                     if pep_in_canon:
                         iso_id_but_pep_in_canon += 1
+
                     if has_annot_up_id:
                         has_stmts += 1
                         print("annot", gene_name, res, pos)
-                    if has_annot_map_up_id:
+                    elif has_annot_map_up_id:
                         has_mapped_stmts += 1
                         print("mapped annot", gene_name, res, pos)
 
@@ -173,6 +175,10 @@ if __name__ == '__main__':
         text += ("Has canonical iso UP ID: %d / %d (%.1f)\n" %
                  (has_canonical_iso_count, total_sites,
                      (100*has_canonical_iso_count / total_sites)))
+        non_canonical_iso_count = total_sites - has_canonical_iso_count
+        text += ("Non-canonical iso UP ID: %d / %d (%.1f)\n" %
+                 (non_canonical_iso_count, total_sites,
+                     (100*non_canonical_iso_count / total_sites)))
         text += ("Annotated in INDRA DB: %d / %d (%.1f)\n" %
                  (has_stmts, total_sites, (100*has_stmts / total_sites)))
         text += ("Mapped site annotated in INDRA DB: %d / %d (%.1f)\n" %
@@ -183,7 +189,7 @@ if __name__ == '__main__':
                   (100*iso_id_but_pep_in_canon / no_can_id_ct)))
 
         print(text)
-        with open(sys.argv[2], 'wt') as f:
+        with open(output_filename, 'wt') as f:
             f.write(text)
         # There are multiple uniprot IDs associated with each refseq ID.
         # To figure out whether it has any annotations, we turn each BRCA
