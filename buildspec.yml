@@ -14,6 +14,7 @@ phases:
       - python -m protmapper.resources
       - cd protmapper_paper
       - aws s3 cp --recursive s3://protmapper-paper/data/ ./data > /dev/null
+      - aws s3 cp s3://protmapper-paper/output/indra_phos_stmts.pkl ./output/ > /dev/null
       - aws s3 cp s3://protmapper-paper/output/pc_site_cache.pkl ./output/ > /dev/null
   build:
     commands:
