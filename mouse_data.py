@@ -40,6 +40,20 @@ def get_data(filename):
                                     get_id_from_string('TREMBL', '|'))
     return df
 
+def _site_in_set(sp_id, tr_id_str, res, pos, site_set):
+    annot_site = None
+    # Try the Swiss Prot ID
+    if sp_id is not np.nan:
+        if (sp_id, res, str(pos)) in site_set:
+            annot_site = (sp_id, res, str(pos))
+    # Try the TREMBL IDs
+    if tr_id_str is not np.nan:
+        for tr_id in tr_id_str.split(';'):
+            if (tr_id, res, str(pos)) in site_set:
+                annot_site = (tr_id, res, str(pos))
+                break
+    return annot_site
+
 
 def count_annotations(df, site_list):
     site_data = df[['SwissProtId', 'TremblId', 'Residue', 'Site']].values
@@ -47,51 +61,38 @@ def count_annotations(df, site_list):
     annot = []
     no_annot = []
     for ix, (sp_id, tr_id_str, res, pos) in enumerate(site_data):
-        last_len = len(annot)
-        print("site %d: annot %d, no annot %d" %
-                (ix, len(annot), len(no_annot)))
-        # If both SwissProt and Trembl IDs are NaN, then we're not going to
-        # find any annotations
         site_entry = (ix, sp_id, tr_id_str, res, str(pos))
-        # Try the Swiss Prot ID
-        site_found = False
-        if sp_id is not np.nan:
-            if (sp_id, res, str(pos)) in site_list_set:
-                site_found = True
-        if tr_id_str is not np.nan:
-            for tr_id in tr_id_str.split(';'):
-                if (tr_id, res, str(pos)) in site_list_set:
-                    site_found = True
-                    break
-        # If we got here, it means none of the IDs were found to be annotated
-        if site_found:
+        annot_site = _site_in_set(sp_id, tr_id_str, res, str(pos),
+                                  site_list_set)
+        if annot_site is not None:
             annot.append(site_entry)
         else:
             no_annot.append(site_entry)
+    print("annot %d, no annot %d" % (len(annot), len(no_annot)))
     return annot, no_annot
 
 
 def count_kin_sub(df, site_dict):
-    site_annot = 0
+    site_data = df[['SwissProtId', 'TremblId', 'Residue', 'Site']].values
+    annot = 0
     total_annot = 0
-    site_data = df[['SwissProtId', 'Residue', 'Site']].values
-    for up_id, res, pos in site_data:
-        site_key = (up_id, res, str(pos))
-        if site_key in site_dict:
-            site_annot += 1
-            num_kinases = len(site_dict[site_key])
-            total_annot += num_kinases
-        print("annot %d, total annot %d" % (site_annot, total_annot))
-    return site_annot, total_annot
+    for ix, (sp_id, tr_id_str, res, pos) in enumerate(site_data):
+        site_entry = (ix, sp_id, tr_id_str, res, str(pos))
+        annot_site = _site_in_set(sp_id, tr_id_str, res, str(pos), site_dict)
+        if annot_site is not None:
+            annot += 1
+            total_annot += len(site_dict[annot_site])
+    print("annot %d, total annot %d" % (annot, total_annot))
+    return annot, total_annot
 
 
 if __name__ == '__main__':
     df = get_data('data/cell5459mmc2.txt')
     # Get baseline for the frequency with which the ascribed Uniprot ID plus
     # site and position is known to phosphosite
-    psp_sites = pspc.sites_only()
-    annot_sites = count_annotations(df, psp_sites)
+    #psp_sites = pspc.sites_only()
+    #annot_sites = count_annotations(df, psp_sites)
 
-    #with open('output/psp_relations_by_site.pkl', 'rb') as f:
-    #    psp_kin_sub = pickle.load(f)
-    #site_annot, total_annot = count_kin_sub(df, psp_kin_sub)
+    with open('output/psp_relations_by_site.pkl', 'rb') as f:
+        psp_kin_sub = pickle.load(f)
+    site_annot, total_annot = count_kin_sub(df, psp_kin_sub)
