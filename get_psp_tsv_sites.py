@@ -7,6 +7,7 @@ from indra.databases import uniprot_client
 df = pd.read_csv('data/Kinase_Substrate_Dataset', delimiter='\t', skiprows=3)
 
 agents = []
+relations_by_site = {}
 
 for kin_up, sub_up, respos in df[['KIN_ACC_ID', 'SUB_ACC_ID',
                                   'SUB_MOD_RSD']].values:
@@ -19,5 +20,16 @@ for kin_up, sub_up, respos in df[['KIN_ACC_ID', 'SUB_ACC_ID',
     sub_ag = Agent(gene_name, mods=[mc], db_refs={'UP': sub_up})
     agents.append(sub_ag)
 
+    site_key = (sub_up, residue, position)
+    if site_key in relations_by_site:
+        relations_by_site[site_key].append(kin_up)
+    else:
+        relations_by_site[site_key] = [kin_up]
+
 with open('output/psp_kinase_substrate_tsv.pkl', 'wb') as f:
     pickle.dump(agents, f)
+
+with open('output/psp_relations_by_site.pkl', 'wb') as f:
+    pickle.dump(relations_by_site, f)
+
+
