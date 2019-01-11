@@ -2,6 +2,7 @@ import pickle
 import numpy as np
 import pandas as pd
 from protmapper import phosphosite_client as pspc
+from protmapper import ProtMapper
 from indra.databases import hgnc_client
 
 
@@ -88,6 +89,36 @@ def count_kin_sub(df, site_dict):
     return annot, total_annot
 
 
+def count_kin_sub_mapped(human_peptides, site_dict):
+    mapped_sites = []
+    in_human = 0
+    not_in_human = 0
+    annot = 0
+    total_annot = 0
+    import random
+    random.shuffle(human_peptides)
+    for ix, (hum_up_id, peptide, site_pos) in enumerate(human_peptides):
+        print(ix)
+        pm = ProtMapper()
+        ms = pm.map_peptide_to_human_ref(hum_up_id, 'uniprot', peptide,
+                                         site_pos)
+        if ms.valid:
+            in_human += 1
+            # Check if the human site is annotated
+            site_key = (ms.up_id, ms.mapped_res, ms.mapped_pos)
+            if site_key in site_dict:
+                annot += 1
+                num_kinases = len(site_dict[site_key])
+                total_annot += num_kinases
+        else:
+            not_in_human += 1
+            #print("Not in human:", hum_up_id, peptide, site_pos)
+        mapped_sites.append(ms)
+        print("Not hum", not_in_human, "hum", in_human,
+              "annot", annot, "total_annot", total_annot)
+    return mapped_sites
+
+
 def mouse_human_mappings(df):
     site_data = df[['MgiId', 'MotifPeptide']].values
     human_peptides = []
@@ -101,8 +132,8 @@ def mouse_human_mappings(df):
             continue
         # Remove the star from the peptide
         proc_peptide = remove_gap.replace('*', '')
-        # Get the position of the target residue
-        site_pos = star_pos - 1
+        # Get the position of the target residue (star_pos - 1 + 1)
+        site_pos = star_pos
         # Get Uniprot ID(s) for this gene(s)
         human_proteins = set()
         # Skip peptides with no MGI ID
@@ -113,10 +144,14 @@ def mouse_human_mappings(df):
             int(mgi_id)
             hgnc_id = hgnc_client.get_hgnc_from_mouse(mgi_id)
             if hgnc_id is not None:
-                up_id = hgnc_client.get_uniprot_id(hgnc_id)
+                up_id_hgnc = hgnc_client.get_uniprot_id(hgnc_id)
                 #gene_sym = hgnc_client.get_hgnc_name(hgnc_id)
-                if up_id is not None:
-                    human_proteins.add(up_id)
+                if up_id_hgnc is None:
+                    continue
+                # If there is more than one hgnc->up_id, try both
+                up_ids = up_id_hgnc.split(',')
+                for up_id in up_ids:
+                    human_proteins.add(up_id.strip())
         if len(human_proteins) > 1:
             print("Warning: >1 protein: %s, %s" %
                     (mgi_id_str, str(human_proteins)))
@@ -133,8 +168,9 @@ if __name__ == '__main__':
     #psp_sites = pspc.sites_only()
     #annot_sites = count_annotations(df, psp_sites)
 
-    # with open('output/psp_relations_by_site.pkl', 'rb') as f:
-    #    psp_kin_sub = pickle.load(f)
+    with open('output/psp_relations_by_site.pkl', 'rb') as f:
+        psp_kin_sub = pickle.load(f)
     # site_annot, total_annot = count_kin_sub(df, psp_kin_sub)
-    human_peptides = mouse_human_mappings(df)
 
+    human_peptides = mouse_human_mappings(df)
+    ms = count_kin_sub_mapped(human_peptides, psp_kin_sub)
