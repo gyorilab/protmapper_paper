@@ -2,6 +2,8 @@ import pickle
 import numpy as np
 import pandas as pd
 from protmapper import phosphosite_client as pspc
+from indra.databases import hgnc_client
+
 
 def get_ipi_mappings(ipi_file):
     names = ('DB_NAME', 'DB_ID', 'IPI_ID', 'UP_IDS', 'MGI_ID')
@@ -86,13 +88,53 @@ def count_kin_sub(df, site_dict):
     return annot, total_annot
 
 
+def mouse_human_mappings(df):
+    site_data = df[['MgiId', 'MotifPeptide']].values
+    human_peptides = []
+    for mgi_id_str, peptide in site_data:
+        # Remove --- indicating gaps (start/end of protein)
+        remove_gap = peptide.replace('-', '')
+        star_pos = remove_gap.find('*')
+        # If there's no asterisk (think this happens once in whole dataset)
+        # skip this peptide
+        if star_pos == -1:
+            continue
+        # Remove the star from the peptide
+        proc_peptide = remove_gap.replace('*', '')
+        # Get the position of the target residue
+        site_pos = star_pos - 1
+        # Get Uniprot ID(s) for this gene(s)
+        human_proteins = set()
+        # Skip peptides with no MGI ID
+        if mgi_id_str is np.nan:
+            continue
+        for mgi_id in mgi_id_str.split('|'):
+            mgi_id = mgi_id.split(':')[1]
+            int(mgi_id)
+            hgnc_id = hgnc_client.get_hgnc_from_mouse(mgi_id)
+            if hgnc_id is not None:
+                up_id = hgnc_client.get_uniprot_id(hgnc_id)
+                #gene_sym = hgnc_client.get_hgnc_name(hgnc_id)
+                if up_id is not None:
+                    human_proteins.add(up_id)
+        if len(human_proteins) > 1:
+            print("Warning: >1 protein: %s, %s" %
+                    (mgi_id_str, str(human_proteins)))
+        for human_prot in human_proteins:
+            human_peptides.append((human_prot, proc_peptide, site_pos))
+    return human_peptides
+
+
 if __name__ == '__main__':
     df = get_data('data/cell5459mmc2.txt')
+
     # Get baseline for the frequency with which the ascribed Uniprot ID plus
     # site and position is known to phosphosite
     #psp_sites = pspc.sites_only()
     #annot_sites = count_annotations(df, psp_sites)
 
-    with open('output/psp_relations_by_site.pkl', 'rb') as f:
-        psp_kin_sub = pickle.load(f)
-    site_annot, total_annot = count_kin_sub(df, psp_kin_sub)
+    # with open('output/psp_relations_by_site.pkl', 'rb') as f:
+    #    psp_kin_sub = pickle.load(f)
+    # site_annot, total_annot = count_kin_sub(df, psp_kin_sub)
+    human_peptides = mouse_human_mappings(df)
+
