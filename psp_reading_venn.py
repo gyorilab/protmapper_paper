@@ -5,7 +5,7 @@ from protmapper import phosphosite_client as pc
 from matplotlib import pyplot as plt
 from matplotlib_venn import venn2, venn3
 from indra.databases import uniprot_client
-
+from indra.util import read_unicode_csv
 
 def get_kinases(stmts):
     kinases = set()
@@ -104,4 +104,24 @@ if __name__ == '__main__':
     venn2((reach_annots, sparser_annots),
           set_labels=('REACH', 'Sparser'))
     plt.savefig('plots/reach_sparser_annotation_overlap.pdf')
+
+    # Read the kinases list
+    kinases = [r[0] for r in read_unicode_csv('data/kinases.tsv', skiprows=1,
+                                              delimiter='\t')]
+    psp_kin = set([s for s in ks_annots if s[3] in kinases])
+    reader_kin = set([s for s in reader_annots if s[3] in kinases])
+    reach_kin = set([s for s in reach_annots if s[3] in kinases])
+    sparser_kin = set([s for s in sparser_annots if s[3] in kinases])
+
+    # Kinases: PSP vs. Readers
+    plt.figure()
+    venn2((psp_kin, reader_kin),
+          set_labels=('PhosphoSitePlus', 'REACH/Sparser'))
+    plt.savefig('plots/psp_reader_kinase_overlap.pdf')
+
+    # Kinases: REACH vs. Sparser
+    plt.figure()
+    venn2((reach_kin, sparser_kin),
+          set_labels=('REACH', 'Sparser'))
+    plt.savefig('plots/reach_sparser_kinase_overlap.pdf')
 
