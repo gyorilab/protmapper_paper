@@ -3,13 +3,18 @@ PLOTS := plots
 DATA := data
 DEPLOY := ../protmapper_manuscript/figures/figure_panels
 
-all: fig1 brca
+all: fig1 brca mouse
 
-fig1: indra_sites $(PLOTS)/site_stats_by_site.pdf
+fig1: indra_sites \
+      $(PLOTS)/site_stats_by_site.pdf \
+      $(PLOTS)/psp_reader_site_overlap.pdf
 
 indra_sites: $(OUTPUT)/indra_stmts_by_site.pkl
 
 brca: $(OUTPUT)/brca_site_stats.txt
+
+mouse: $(OUTPUT)/psp_relations_by_site.pkl
+#$(OUTPUT)/mouse_kin_sub_count.txt
 
 # MAKEFILE GRAPH
 graph: makegraph.pdf
@@ -92,6 +97,10 @@ $(OUTPUT)/all_db_sites.csv: \
 $(PLOTS)/site_stats_by_site.pdf: $(OUTPUT)/all_db_sites.csv
 	python sitemap_fig.py plot_site_stats
 
+$(PLOTS)/psp_reader_site_overlap.pdf: \
+    $(OUTPUT)/reader_sites.pkl \
+    $(OUTPUT)/psp_kinase_substrate_tsv.pkl
+	python psp_reading_venn.py
 
 # BRCA data ----------------------------------------------------------
 $(OUTPUT)/brca_up_mappings.txt: \
@@ -104,4 +113,12 @@ $(OUTPUT)/brca_site_stats.txt: \
     $(OUTPUT)/brca_up_mappings.txt
 	python brca_data.py site_stats $< $@
 
+
+
+# MOUSE data ---------------------------------------------------------
+
+$(OUTPUT)/psp_relations_by_site.pkl: $(DATA)/Kinase_Substrate_Dataset
+	python get_psp_tsv_sites.py
+
+#$(OUTPUT)/mouse_kin_sub_count.txt: $(OUTPUT)/psp_relations_by_site.pkl
 
