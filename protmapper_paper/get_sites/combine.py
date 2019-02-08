@@ -1,3 +1,6 @@
+import os
+import sys
+import pickle
 
 FILE_SOURCE_MAP = {
     'PathwayCommons10.hprd.BIOPAX.sites.pkl': 'hprd',
@@ -9,6 +12,7 @@ FILE_SOURCE_MAP = {
      #'psp_kinase_substrate_tsv.sites.pkl': 'psp',
     'Kinase_substrates.sites.pkl': 'psp',
     'bel_large_corpus.sites.pkl': 'bel',
+    'signor.sites.pkl': 'signor',
 }
 
 
@@ -22,9 +26,9 @@ if __name__ == '__main__':
         with open(site_file, 'rb') as f:
             site_dict = pickle.load(f)
             for site in site_dict:
-                if site in all_sites:
+                if site not in all_sites:
                     all_sites[site] = {'lhs': {}, 'rhs': {}}
                 all_sites[site]['lhs'][source] = site_dict[site]['lhs']
                 all_sites[site]['rhs'][source] = site_dict[site]['rhs']
     with open(output_file, 'wb') as f:
-        pickle.dump(all_sites)
+        pickle.dump(all_sites, f)
