@@ -51,36 +51,38 @@ $(OUTPUT)/indra_stmts_by_site.pkl: \
 
 
 # FIG1 --------------------------------------------------------------
-# PC Sites
+# PC Sites/Biopax
 $(OUTPUT)/biopax/%.pkl: $(DATA)/biopax/%.owl
-	python get_pc_sites.py $< $@
+	python -m protmapper_paper.get_sites.biopax $< $@
 
 $(OUTPUT)/psp_kinase_substrate_tsv.pkl: \
     $(DATA)/Kinase_Substrate_Dataset
-	python get_psp_tsv_sites.py
+	python -m protmapper_paper.get_sites.psp
 
 $(OUTPUT)/biopax_sites_by_db.pkl: \
     $(OUTPUT)/biopax/PathwayCommons10.hprd.BIOPAX.pkl \
     $(OUTPUT)/biopax/PathwayCommons10.kegg.BIOPAX.pkl \
     $(OUTPUT)/biopax/PathwayCommons10.panther.BIOPAX.pkl \
     $(OUTPUT)/biopax/PathwayCommons10.pid.BIOPAX.pkl \
-    $(OUTPUT)/biopax/PathwayCommons10.psp.BIOPAX.pkl \
     $(OUTPUT)/biopax/PathwayCommons10.reactome.BIOPAX.pkl \
     $(OUTPUT)/biopax/PathwayCommons10.wp.BIOPAX.pkl \
-    $(OUTPUT)/biopax/Kinase_substrates.pkl \
     $(OUTPUT)/psp_kinase_substrate_tsv.pkl \
-    $(OUTPUT)/biopax/Homo_sapiens.pkl
 	python sitemap_fig.py map_pc_sites > /dev/null
+
+# Skipping the other sources for PSP and Reactome data
+#$(OUTPUT)/biopax/Kinase_substrates.pkl \
+#$(OUTPUT)/biopax/PathwayCommons10.psp.BIOPAX.pkl
+#$(OUTPUT)/biopax/Homo_sapiens.pkl
 
 # BEL Sites
 $(OUTPUT)/large_corpus_pybel.pkl: $(DATA)/large_corpus.bel
-	python get_bel_sites.py parse_belscript 2> /dev/null
+	python -m protmapper_paper.get_sites.bel parse_belscript
 
 $(OUTPUT)/bel_mod_agents.pkl: $(OUTPUT)/large_corpus_pybel.pkl
-	python get_bel_sites.py get_pybel_mod_agents
+	python -m protmapper_paper.get_sites.bel get_pybel_mod_agents
 
 $(OUTPUT)/bel_mod_stmts_by_site.pkl: $(OUTPUT)/large_corpus_pybel.pkl
-	python get_bel_sites.py get_pybel_stmts_by_site
+	python -m protmapper_paper.get_sites.bel get_pybel_stmts_by_site
 
 $(OUTPUT)/bel_sites.pkl: $(OUTPUT)/bel_mod_agents.pkl
 	python sitemap_fig.py map_bel_sites > /dev/null

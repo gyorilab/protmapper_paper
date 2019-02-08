@@ -1,7 +1,4 @@
-from collections import defaultdict
-from indra.sources import biopax
 from indra.statements import ActiveForm, Phosphorylation, Dephosphorylation
-
 
 def get_mod_sites(indra_stmts):
     sites = {}
