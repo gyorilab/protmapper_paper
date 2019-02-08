@@ -74,10 +74,10 @@ $(OUTPUT)/biopax_sites_by_db.pkl: \
 
 # BEL Sites
 $(OUTPUT)/large_corpus_pybel.pkl: $(DATA)/large_corpus.bel
-	python process_bel_large_corpus.py parse_belscript 2> /dev/null
+	python get_bel_sites.py parse_belscript 2> /dev/null
 
 $(OUTPUT)/bel_mod_agents.pkl: $(OUTPUT)/large_corpus_pybel.pkl
-	python process_bel_large_corpus.py get_pybel_mod_agents
+	python get_bel_sites.py get_pybel_mod_agents
 
 $(OUTPUT)/bel_sites.pkl: $(OUTPUT)/bel_mod_agents.pkl
 	python sitemap_fig.py map_bel_sites > /dev/null
