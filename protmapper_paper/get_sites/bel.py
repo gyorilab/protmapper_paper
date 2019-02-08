@@ -9,20 +9,24 @@ from .util import get_mod_sites
 if __name__ == '__main__':
     # Parse the BEL script, takes a few minutes
     if sys.argv[1] == 'parse_belscript':
-        pbg = pybel.from_path('data/large_corpus.bel')
-        pybel.to_pickle(pbg, 'output/large_corpus_pybel.pkl')
+        input_file = sys.argv[1]
+        output_file = sys.argv[2]
+        pbg = pybel.from_path(input_file)
+        pybel.to_pickle(pbg, output_file)
     # Get all variant sites from the graph
-    elif sys.argv[1] == 'get_pybel_mod_agents':
-        pbg = pybel.from_pickle('output/large_corpus_pybel.pkl')
-        mod_nodes = [get_agent(n) for n in pbg.nodes()
-                     if has_protein_modification(n)]
-        with open('output/bel_mod_agents.pkl', 'wb') as f:
-            pickle.dump(mod_nodes, f)
+    #elif sys.argv[1] == 'get_pybel_mod_agents':
+    #    pbg = pybel.from_pickle('output/large_corpus_pybel.pkl')
+    #    mod_nodes = [get_agent(n) for n in pbg.nodes()
+    #                 if has_protein_modification(n)]
+    #    with open('output/bel_mod_agents.pkl', 'wb') as f:
+    #        pickle.dump(mod_nodes, f)
     elif sys.argv[1] == 'get_pybel_stmts_by_site':
-        pbg = pybel.from_pickle('output/large_corpus_pybel.pkl')
+        input_file = sys.argv[1]
+        output_file = sys.argv[2]
+        pbg = pybel.from_pickle(input_file)
         pbp = bel.process_pybel_graph(pbg)
         sites = get_mod_sites(pbp.statements)
-        with open('output/bel_mod_stmts_by_site.pkl', 'wb') as f:
+        with open(output_file, 'wb') as f:
             pickle.dump(sites, f)
     else:
         sys.exit(1)
