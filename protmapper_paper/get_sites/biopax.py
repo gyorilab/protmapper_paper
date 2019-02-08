@@ -61,7 +61,7 @@ def save_phosphorylation_stmts(owl_file, pkl_file):
 if __name__ == '__main__':
     owl_file = sys.argv[1]
     pkl_file = sys.argv[2]
-    #save_phosphorylation_stmts(owl_file, pkl_file)
+    save_phosphorylation_stmts(owl_file, pkl_file)
     #save_modified_agents(owl_file, pkl_file)
 
 

@@ -55,9 +55,9 @@ $(OUTPUT)/indra_stmts_by_site.pkl: \
 $(OUTPUT)/biopax/%.pkl: $(DATA)/biopax/%.owl
 	python -m protmapper_paper.get_sites.biopax $< $@
 
-$(OUTPUT)/psp_kinase_substrate_tsv.pkl: \
-    $(DATA)/Kinase_Substrate_Dataset
-	python -m protmapper_paper.get_sites.psp
+#$(OUTPUT)/psp_kinase_substrate_tsv.pkl: \
+#    $(DATA)/Kinase_Substrate_Dataset
+#	python -m protmapper_paper.get_sites.psp $< $@
 
 $(OUTPUT)/biopax_sites_by_db.pkl: \
     $(OUTPUT)/biopax/PathwayCommons10.hprd.BIOPAX.pkl \
@@ -67,10 +67,10 @@ $(OUTPUT)/biopax_sites_by_db.pkl: \
     $(OUTPUT)/biopax/PathwayCommons10.reactome.BIOPAX.pkl \
     $(OUTPUT)/biopax/PathwayCommons10.wp.BIOPAX.pkl \
     $(OUTPUT)/psp_kinase_substrate_tsv.pkl \
+    $(OUTPUT)/biopax/Kinase_substrates.pkl
 	python sitemap_fig.py map_pc_sites > /dev/null
 
 # Skipping the other sources for PSP and Reactome data
-#$(OUTPUT)/biopax/Kinase_substrates.pkl \
 #$(OUTPUT)/biopax/PathwayCommons10.psp.BIOPAX.pkl
 #$(OUTPUT)/biopax/Homo_sapiens.pkl
 
