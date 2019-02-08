@@ -4,8 +4,12 @@ from indra.statements import ActiveForm, Phosphorylation, Dephosphorylation
 
 
 def get_mod_sites(indra_stmts):
-    lhs_sites = defaultdict(list)
-    rhs_sites = defaultdict(list)
+    sites = {}
+
+    def add_site(site, side, stmt):
+        if site not in sites:
+            sites[site] = {'lhs': [], 'rhs': []}
+        sites[site][side].append(stmt)
 
     def add_agent_mods(stmt, agent):
         phos_mods = [mc for mc in agent.mods
@@ -13,7 +17,7 @@ def get_mod_sites(indra_stmts):
                         mc.residue and mc.position]
         for pm in set(phos_mods):
             site = (agent.db_refs['UP'], pm.residue, pm.position)
-            lhs_sites[site].append(stmt)
+            add_site(site, 'lhs', stmt)
 
     for stmt in indra_stmts:
         # Skip complexes
@@ -29,13 +33,13 @@ def get_mod_sites(indra_stmts):
             # First, check the subject agent for mod conditions; if so, add
             # LHS annotation
             subj = stmt.agent_list()[0]
-            if subj.mods:
+            if subj.mods and 'UP' in subj.db_refs:
                 add_agent_mods(stmt, subj)
             # Second, check if the statement is a Phos/Dephos stmt
             if (isinstance(stmt, Phosphorylation) or \
                isinstance(stmt, Dephosphorylation)) and \
                'UP' in stmt.sub.db_refs:
                 site = (stmt.sub.db_refs['UP'], stmt.residue, stmt.position)
-                rhs_sites[site].append(stmt)
-    return lhs_sites, rhs_sites
+                add_site(site, 'rhs', stmt)
+    return sites
 

@@ -79,6 +79,9 @@ $(OUTPUT)/large_corpus_pybel.pkl: $(DATA)/large_corpus.bel
 $(OUTPUT)/bel_mod_agents.pkl: $(OUTPUT)/large_corpus_pybel.pkl
 	python get_bel_sites.py get_pybel_mod_agents
 
+$(OUTPUT)/bel_mod_stmts_by_site.pkl: $(OUTPUT)/large_corpus_pybel.pkl
+	python get_bel_sites.py get_pybel_stmts_by_site
+
 $(OUTPUT)/bel_sites.pkl: $(OUTPUT)/bel_mod_agents.pkl
 	python sitemap_fig.py map_bel_sites > /dev/null
 
