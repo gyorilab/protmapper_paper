@@ -40,14 +40,14 @@ clean:
 #
 # Get phospho statements from INDRA DB/Reading -----------------------
 $(OUTPUT)/indra_phos_stmts.pkl:
-	python get_db_sites.py get_phos_stmts $@
+	python get_indra_sites.py get_phos_stmts $@
 
 $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl: $(OUTPUT)/indra_phos_stmts.pkl
-	python get_db_sites.py preprocess_stmts $< $@
+	python get_indra_sites.py preprocess_stmts $< $@
 
 $(OUTPUT)/indra_stmts_by_site.pkl: \
     $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl
-	python get_db_sites.py stmts_by_site $< $@
+	python get_indra_sites.py stmts_by_site $< $@
 
 
 # FIG1 --------------------------------------------------------------
@@ -84,7 +84,7 @@ $(OUTPUT)/bel_sites.pkl: $(OUTPUT)/bel_mod_agents.pkl
 
 # Reader Sites
 $(OUTPUT)/reader_sites.pkl: $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl
-	python get_db_sites.py reader_sites $<
+	python get_indra_sites.py reader_sites $<
 
 # All sites combined into a single dataframe
 $(OUTPUT)/all_db_sites.csv: \

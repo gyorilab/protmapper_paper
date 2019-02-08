@@ -89,6 +89,7 @@ def get_reader_sites(input_file):
     pm.save_cache()
 
 
+"""
 def site_cache_stats():
     sm = SiteMapper(use_cache=True)
     ms_desc_list = []
@@ -110,6 +111,7 @@ def site_cache_stats():
     ctr = sorted([(k, v) for k, v in ctr.items()],
                  key=lambda x: x[1], reverse=True)
     return ctr, examples
+"""
 
 
 if __name__ == '__main__':
