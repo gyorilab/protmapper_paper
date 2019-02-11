@@ -3,6 +3,7 @@ import sys
 import pickle
 import matplotlib
 matplotlib.use('agg')
+import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
 from indra.util import plot_formatting as pf
@@ -28,6 +29,72 @@ def create_site_csv(site_dict, mapping_results, csv_file):
     with open(csv_file, 'wt') as f:
         csvwriter = csv.writer(f)
         csvwriter.writerows(all_sites)
+
+
+def print_stats(site_df):
+    """Print statistics about site validity."""
+    def pct(n, d):
+        return 100 * n / float(d)
+    df = site_df[site_df.ERROR_CODE.isna()]
+    results = {}
+    # Group statistics by source
+    sources = df.SOURCE.unique()
+    for source in sources:
+        print("Stats for %s -------------" % source)
+        s = df[df.SOURCE == source]
+        s_valid = s[s.VALID]
+        s_map = s[s.MAPPED_POS.notnull()]
+        n = len(s)
+        n_val = len(s_valid)
+        n_inv = n - n_val
+        n_map = len(s_map)
+        n_unmap = n_inv - n_map
+        f = s.FREQ.sum()
+        f_val = s_valid.FREQ.sum()
+        f_inv = f - f_val
+        f_map = s_map.FREQ.sum()
+        f_unmap = f_inv - f_map
+        db_results = {
+                'Source': source,
+                'Total Sites': n,
+                'Valid Sites': n_val,
+                'Valid Sites Pct.': pct(n_val, n),
+                'Invalid Sites': n_inv,
+                'Invalid Sites Pct.': pct(n_inv, n),
+                'Mapped Sites': n_map,
+                'Mapped Sites Pct.': pct(n_map, n_inv),
+                'Mapped Sites Pct. Total': pct(n_map, n),
+                'Unmapped Sites': n_unmap,
+                'Unmapped Sites Pct.': pct(n_unmap, n_inv),
+                'Unmapped Sites Pct. Total': pct(n_unmap, n),
+                'Total Occurrences': f,
+                'Valid Occ.': f_val,
+                'Valid Occ. Pct.': pct(f_val, f),
+                'Invalid Occ.': f_inv,
+                'Invalid Occ. Pct.': pct(f_inv, f),
+                'Mapped Occ.': f_map,
+                'Mapped Occ. Pct.': pct(f_map, f_inv),
+                'Mapped Occ. Pct. Total': pct(f_map, f),
+                'Unmapped Occ.': f_unmap,
+                'Unmapped Occ. Pct.': pct(f_unmap, f_inv),
+                'Unmapped Occ. Pct. Total': pct(f_unmap, f),
+        }
+        results[source] = db_results
+
+        print("Total sites: %d" % n)
+        print("  Valid:   %d (%0.1f)" % (n_val, pct(n_val, n)))
+        print("  Invalid: %d (%0.1f)" % (n_inv, pct(n_inv, n)))
+        print("  Mapped:  %d (%0.1f)" % (n_map, pct(n_map, n)))
+        print("%% Mapped:  %0.1f\n" % pct(n_map, n_inv))
+        print("Total site occurrences: %d" % f)
+        print("  Valid:   %d (%0.1f)" % (f_val, pct(f_val, f)))
+        print("  Invalid: %d (%0.1f)" % (f_inv, pct(f_inv, f)))
+        print("  Mapped:  %d (%0.1f)" % (f_map, pct(f_map, f)))
+        print("Pct occurrences mapped: %0.1f\n" % pct(f_map, f_inv))
+    # Sample 100 invalid-unmapped (by unique sites)
+    # Sample 100 invalid-mapped (by unique sites)
+    results_df = pd.DataFrame.from_dict(results, orient='index')
+    return results_df
 
 
 def plot_site_stats(csv_file, output_base):
@@ -75,4 +142,4 @@ if __name__ == '__main__':
     elif sys.argv[1] == 'plot_site_stats':
         input_file = sys.argv[2]
         output_base = sys.argv[3]
-        plot_site_stats(input_file, output_file)
+        plot_site_stats(input_file, output_base)
