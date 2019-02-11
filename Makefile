@@ -40,14 +40,14 @@ clean:
 #
 # Get phospho statements from INDRA DB/Reading -----------------------
 $(OUTPUT)/indra_phos_stmts.pkl:
-	python get_indra_sites.py get_phos_stmts $@
+	python -m protmapper_paper.get_sites.indra get_phos_stmts $@
 
 $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl: $(OUTPUT)/indra_phos_stmts.pkl
-	python get_indra_sites.py preprocess_stmts $< $@
+	python -m protmapper_paper.get_sites.indra preprocess_stmts $< $@
 
-$(OUTPUT)/indra_stmts_by_site.pkl: \
+$(OUTPUT)/indra_reach.sites.pkl: \
     $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl
-	python get_indra_sites.py stmts_by_site $< $@
+	python -m protmapper_paper.get_sites.indra stmts_by_site $< indra
 
 
 # FIG1 --------------------------------------------------------------
@@ -91,6 +91,8 @@ $(OUTPUT)/all_sites.pkl: \
     $(OUTPUT)/PathwayCommons10.reactome.BIOPAX.sites.pkl \
     $(OUTPUT)/PathwayCommons10.wp.BIOPAX.sites.pkl \
     $(OUTPUT)/Kinase_substrates.sites.pkl
+    $(OUTPUT)/indra_reach.sites.pkl \
+    $(OUTPUT)/indra_sparser.sites.pkl
 	python -m protmapper_paper.get_sites.combine $@ $(OUTPUT)/*.sites.pkl
 
 $(OUTPUT)/mapping_results.pkl: $(OUTPUT)/all_sites.pkl
