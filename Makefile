@@ -5,11 +5,9 @@ DEPLOY := ../protmapper_manuscript/figures/figure_panels
 
 all: fig1 brca mouse
 
-fig1: indra_sites \
-      $(PLOTS)/site_stats_by_site.pdf \
+fig1: $(PLOTS)/site_stats_by_site.pdf \
       $(PLOTS)/psp_reader_site_overlap.pdf
 
-indra_sites: $(OUTPUT)/indra_stmts_by_site.pkl
 
 brca: $(OUTPUT)/brca_site_stats.txt
 
@@ -47,14 +45,17 @@ $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl: $(OUTPUT)/indra_phos_stmts.pkl
 
 $(OUTPUT)/indra_reach.sites.pkl: \
     $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl
-	python -m protmapper_paper.get_sites.indra stmts_by_site $< indra
+	python -m protmapper_paper.get_sites.indra stmts_by_site $< reach $@
+
+$(OUTPUT)/indra_sparser.sites.pkl: \
+    $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl
+	python -m protmapper_paper.get_sites.indra stmts_by_site $< sparser $@
 
 
-# FIG1 --------------------------------------------------------------
+# COLLECT_SITES --------------------------------------------------------------
 # PC Sites/Biopax
 $(OUTPUT)/%.sites.pkl: $(DATA)/biopax/%.owl
 	python -m protmapper_paper.get_sites.biopax $< $@
-
 
 # BEL Sites
 $(OUTPUT)/large_corpus_pybel.pkl: $(DATA)/large_corpus.bel
@@ -66,7 +67,6 @@ $(OUTPUT)/bel_large_corpus.sites.pkl: $(OUTPUT)/large_corpus_pybel.pkl
 # SIGNOR sites
 $(OUTPUT)/signor.sites.pkl:
 	python -m protmapper_paper.get_sites.signor $@
-
 
 # Reader Sites
 $(OUTPUT)/reader_sites.pkl: $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl
@@ -90,7 +90,7 @@ $(OUTPUT)/all_sites.pkl: \
     $(OUTPUT)/PathwayCommons10.pid.BIOPAX.sites.pkl \
     $(OUTPUT)/PathwayCommons10.reactome.BIOPAX.sites.pkl \
     $(OUTPUT)/PathwayCommons10.wp.BIOPAX.sites.pkl \
-    $(OUTPUT)/Kinase_substrates.sites.pkl
+    $(OUTPUT)/Kinase_substrates.sites.pkl \
     $(OUTPUT)/indra_reach.sites.pkl \
     $(OUTPUT)/indra_sparser.sites.pkl
 	python -m protmapper_paper.get_sites.combine $@ $(OUTPUT)/*.sites.pkl
@@ -120,11 +120,10 @@ $(OUTPUT)/brca_up_mappings.txt: \
     $(DATA)/HUMAN_9606_idmapping.dat
 	python brca_data.py map_uniprot
 
-$(OUTPUT)/brca_site_stats.txt: \
-    $(OUTPUT)/indra_stmts_by_site.pkl \
-    $(OUTPUT)/brca_up_mappings.txt
-	python brca_data.py site_stats $< $@
-
+#$(OUTPUT)/brca_site_stats.txt: \
+#    $(OUTPUT)/indra_stmts_by_site.pkl \
+#    $(OUTPUT)/brca_up_mappings.txt
+#	python brca_data.py site_stats $< $@
 
 
 # MOUSE data ---------------------------------------------------------

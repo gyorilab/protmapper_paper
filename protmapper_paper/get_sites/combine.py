@@ -13,6 +13,8 @@ FILE_SOURCE_MAP = {
     'Kinase_substrates.sites.pkl': 'psp',
     'bel_large_corpus.sites.pkl': 'bel',
     'signor.sites.pkl': 'signor',
+    'indra_reach.sites.pkl': 'reach',
+    'indra_sparser.sites.pkl': 'sparser',
 }
 
 

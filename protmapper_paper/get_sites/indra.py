@@ -35,28 +35,25 @@ def preprocess_db_stmts(stmts, output_file):
     return site_stmts
 
 
-def get_stmts_by_site(phos_stmts, basename):
+def get_reader_stmts_by_site(phos_stmts, reader, filename):
     # First filter statements to those that have objects with uniprot IDs
-    readers = ['reach', 'sparser']
-    for reader in readers:
-        stmts_by_site = {}
-        # Filter to stmts for this reader
-        reader_stmts = [s for s in phos_stmts
-                        if s.evidence[0].source_api == reader]
-        for s in reader_stmts:
-            up_id = s.sub.db_refs.get('UP')
-            # Filter to stmts with substrate UP ID, residue and position
-            if up_id is None or \
-               s.residue is None or s.position is None or \
-               s.residue not in ('S', 'T', 'Y'):
-                continue
-            site = (up_id, s.residue, s.position)
-            if site not in stmts_by_site:
-                stmts_by_site[site] = {'lhs': [], 'rhs': []}
-            stmts_by_site[site]['rhs'].append(s)
-        filename = '%s_%s.sites.pkl' % (basename, reader)
-        with open(filename, 'wb') as f:
-            pickle.dump(stmts_by_site, f)
+    stmts_by_site = {}
+    # Filter to stmts for this reader
+    reader_stmts = [s for s in phos_stmts
+                    if s.evidence[0].source_api == reader]
+    for s in reader_stmts:
+        up_id = s.sub.db_refs.get('UP')
+        # Filter to stmts with substrate UP ID, residue and position
+        if up_id is None or \
+           s.residue is None or s.position is None or \
+           s.residue not in ('S', 'T', 'Y'):
+            continue
+        site = (up_id, s.residue, s.position)
+        if site not in stmts_by_site:
+            stmts_by_site[site] = {'lhs': [], 'rhs': []}
+        stmts_by_site[site]['rhs'].append(s)
+    with open(filename, 'wb') as f:
+        pickle.dump(stmts_by_site, f)
 
 
 def get_reader_sites(input_file):
@@ -104,9 +101,10 @@ if __name__ == '__main__':
         preproc_stmts = preprocess_db_stmts(input_stmts, output_file)
     elif sys.argv[1] == 'stmts_by_site':
         input_file = sys.argv[2]
-        basename = sys.argv[3]
+        reader = sys.argv[3]
+        filename = sys.argv[4]
         input_stmts = ac.load_statements(input_file)
-        get_stmts_by_site(input_stmts, basename)
+        get_reader_stmts_by_site(input_stmts, reader, filename)
     elif sys.argv[1] == 'reader_sites':
         input_file = sys.argv[2]
         get_reader_sites(input_file)

@@ -12,19 +12,35 @@ from indra.util import plot_formatting as pf
 def create_site_csv(site_dict, mapping_results, csv_file):
     header = ['SOURCE', 'GENE_NAME', 'UP_ID', 'ERROR_CODE', 'VALID', 'ORIG_RES',
               'ORIG_POS', 'MAPPED_RES', 'MAPPED_POS', 'DESCRIPTION',
-              'SIDE', 'FREQ']
+              'SIDE', 'HAS_SUBJECT', 'FREQ']
     all_sites = [header]
     for site in site_dict:
         ms = mapping_results[site]
         up_id, res, pos = site
         for side in ('lhs', 'rhs'):
             for source, stmts in site_dict[site][side].items():
-                freq = len(stmts)
-                if freq > 0:
-                    row = [source, ms.gene_name, ms.up_id, ms.error_code,
+                if len(stmts) == 0:
+                    continue
+                elif side == 'rhs':
+                    none_enz = [s for s in stmts if s.agent_list() is None]
+                    # Add count for stmts without subject
+                    all_sites.append([
+                           source, ms.gene_name, ms.up_id, ms.error_code,
                            ms.valid, ms.orig_res, ms.orig_pos, ms.mapped_res,
-                           ms.mapped_pos, ms.description, side, freq]
-                    all_sites.append(row)
+                           ms.mapped_pos, ms.description, side, False,
+                           len(none_enz)])
+                    # Add count for stmts *with* subject
+                    all_sites.append([
+                           source, ms.gene_name, ms.up_id, ms.error_code,
+                           ms.valid, ms.orig_res, ms.orig_pos, ms.mapped_res,
+                           ms.mapped_pos, ms.description, side, True,
+                           len(stmts) - len(none_enz)])
+                else:
+                    all_sites.append([
+                           source, ms.gene_name, ms.up_id, ms.error_code,
+                           ms.valid, ms.orig_res, ms.orig_pos, ms.mapped_res,
+                           ms.mapped_pos, ms.description, side,
+                           True, len(stmts)])
     print("Saving %d entries to %s" % (len(all_sites)-1, csv_file))
     with open(csv_file, 'wt') as f:
         csvwriter = csv.writer(f)
@@ -124,6 +140,15 @@ def plot_site_stats(csv_file, output_base):
         df.plot(kind='bar', stacked=True, color=['blue', 'orange'])
         plt.subplots_adjust(bottom=0.2)
         plt.savefig('%s_%s.pdf' % (output_base, kind))
+
+
+def get_sites_by_source(sites_dict, source, side):
+    filt_dict = {}
+    for site in sites_dict.keys():
+        source_stmts = sites_dict[site][side].get(source)
+        if source_stmts:
+            filt_dict[site] = source_stmts
+    return filt_dict
 
 
 if __name__ == '__main__':
