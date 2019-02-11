@@ -6,6 +6,7 @@ from indra.statements import Agent, ModCondition, Phosphorylation, \
 from indra.sources import biopax
 from indra.sources.biopax import processor as bpc
 from indra.sources.biopax import pathway_commons_client as pcc
+from .util import get_mod_sites
 
 def save_modified_agents(owl_file, output_file):
     print('Reading %s...' % owl_file)
@@ -51,17 +52,15 @@ def save_modified_agents(owl_file, output_file):
 
 def save_phosphorylation_stmts(owl_file, pkl_file):
     bp = biopax.process_owl(owl_file)
-    phos = ac.filter_by_type(bp.statements, Phosphorylation)
-    dephos = ac.filter_by_type(bp.statements, Dephosphorylation)
-    stmts = phos + dephos
-    respos_stmts = [s for s in stmts if s.residue and s.position]
-    ac.dump_statements(respos_stmts, pkl_file)
-
+    sites = get_mod_sites(bp.statements)
+    with open(pkl_file, 'wb') as f:
+        pickle.dump(sites, f)
+    return sites
 
 if __name__ == '__main__':
     owl_file = sys.argv[1]
     pkl_file = sys.argv[2]
-    #save_phosphorylation_stmts(owl_file, pkl_file)
+    save_phosphorylation_stmts(owl_file, pkl_file)
     #save_modified_agents(owl_file, pkl_file)
 
 

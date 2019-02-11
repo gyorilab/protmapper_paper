@@ -1,10 +1,14 @@
+import sys
 import pickle
 import pandas as pd
 from indra.statements import *
 from indra.databases import uniprot_client
 
 # Read the data
-df = pd.read_csv('data/Kinase_Substrate_Dataset', delimiter='\t', skiprows=3)
+data_file = sys.argv[1]
+output_file = sys.argv[2]
+
+df = pd.read_csv(data_file, delimiter='\t', skiprows=3)
 
 agents = []
 relations_by_site = {}
@@ -26,10 +30,9 @@ for kin_up, sub_up, respos in df[['KIN_ACC_ID', 'SUB_ACC_ID',
     else:
         relations_by_site[site_key] = [kin_up]
 
-with open('output/psp_kinase_substrate_tsv.pkl', 'wb') as f:
+with open(output_file, 'wb') as f:
     pickle.dump(agents, f)
 
-with open('output/psp_relations_by_site.pkl', 'wb') as f:
-    pickle.dump(relations_by_site, f)
-
+#with open('output/psp_relations_by_site.pkl', 'wb') as f:
+#    pickle.dump(relations_by_site, f)
 

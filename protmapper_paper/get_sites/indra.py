@@ -1,12 +1,9 @@
 import sys
 import pickle
 import itertools
-from collections import Counter, defaultdict
-from indra.databases import uniprot_client
+from collections import Counter
 from indra.tools import assemble_corpus as ac
-from indra.util import read_unicode_csv, write_unicode_csv
-from protmapper import ProtMapper
-from sitemap_fig import ms_to_si, CACHE_PATH, replace_nones
+
 
 def get_db_phos_stmts(filename):
     from indra_db.client import get_statements_by_gene_role_type
@@ -33,27 +30,30 @@ def preprocess_db_stmts(stmts, output_file):
         uniq_stmts.append(list(group)[0][1])
     # Filter to statements with residue and position
     site_stmts = [s for s in uniq_stmts if s.residue and s.position]
+    # Organize into a dictionary indexed by site
     ac.dump_statements(site_stmts, output_file)
     return site_stmts
 
 
-def get_stmts_by_site(phos_stmts, filename=None):
+def get_reader_stmts_by_site(phos_stmts, reader, filename):
     # First filter statements to those that have objects with uniprot IDs
-    filt_stmts = [s for s in phos_stmts if s.sub.db_refs.get('UP')]
-    gene_sites = []
     stmts_by_site = {}
-    for s in filt_stmts:
-        if s.enz is None:
+    # Filter to stmts for this reader
+    reader_stmts = [s for s in phos_stmts
+                    if s.evidence[0].source_api == reader]
+    for s in reader_stmts:
+        up_id = s.sub.db_refs.get('UP')
+        # Filter to stmts with substrate UP ID, residue and position
+        if up_id is None or \
+           s.residue is None or s.position is None or \
+           s.residue not in ('S', 'T', 'Y'):
             continue
-        site = (s.sub.db_refs.get('UP'), s.residue, s.position)
-        if site in stmts_by_site:
-            stmts_by_site[site].append(s)
-        else:
-            stmts_by_site[site] = [s]
-    if filename:
-        with open(filename, 'wb') as f:
-            pickle.dump(stmts_by_site, f)
-    return stmts_by_site
+        site = (up_id, s.residue, s.position)
+        if site not in stmts_by_site:
+            stmts_by_site[site] = {'lhs': [], 'rhs': []}
+        stmts_by_site[site]['rhs'].append(s)
+    with open(filename, 'wb') as f:
+        pickle.dump(stmts_by_site, f)
 
 
 def get_reader_sites(input_file):
@@ -89,31 +89,6 @@ def get_reader_sites(input_file):
     pm.save_cache()
 
 
-"""
-def site_cache_stats():
-    sm = SiteMapper(use_cache=True)
-    ms_desc_list = []
-    examples = defaultdict(list)
-    for site_key, mapped_site in sm._cache.items():
-        if mapped_site is not None:
-            ms_desc_list.append(mapped_site.description)
-            if mapped_site.description in (
-                           'INFERRED_ALTERNATIVE_ISOFORM',
-                           'INFERRED_MOUSE_SITE',
-                           'INFERRED_RAT_SITE',
-                           'INFERRED_METHIONINE_CLEAVAGE',
-                           'NO_MAPPING_FOUND'):
-                examples[mapped_site.description].append(mapped_site)
-        else:
-            ms_desc_list.append('NO_MAPPING_FOUND')
-
-    ctr = Counter(ms_desc_list)
-    ctr = sorted([(k, v) for k, v in ctr.items()],
-                 key=lambda x: x[1], reverse=True)
-    return ctr, examples
-"""
-
-
 if __name__ == '__main__':
     # Get statements from INDRA database
     if sys.argv[1] == 'get_phos_stmts':
@@ -126,34 +101,13 @@ if __name__ == '__main__':
         preproc_stmts = preprocess_db_stmts(input_stmts, output_file)
     elif sys.argv[1] == 'stmts_by_site':
         input_file = sys.argv[2]
-        output_file = sys.argv[3]
+        reader = sys.argv[3]
+        filename = sys.argv[4]
         input_stmts = ac.load_statements(input_file)
-        get_stmts_by_site(input_stmts, output_file)
+        get_reader_stmts_by_site(input_stmts, reader, filename)
     elif sys.argv[1] == 'reader_sites':
         input_file = sys.argv[2]
         get_reader_sites(input_file)
     else:
-        print("Argument must be get_phos_stmts or map_grounding.")
-        print(sys.argv)
-        sys.exit(1)
-
-    """
-    preproc_stmts = \
-            ac.load_statements('output/db_phos_stmts_gmap_uniq_pos_enz.pkl')
-    stmts_by_site = get_stmts_by_site(preproc_stmts, 'output/stmts_by_site.pkl')
-
-    #gene_sites = get_db_sites(reload=True, phos_stmts=phos_stmts)
-    gene_sites = get_db_sites(reload=False)
-    import random
-    random.seed(1)
-    random.shuffle(gene_sites)
-    gene_sites = gene_sites[0:1000]
-    sm = SiteMapper(use_cache=True)
-    site_list = [(gs[0], 'uniprot', gs[3], gs[4]) for gs in gene_sites]
-    mapped_sites = sm.map_sitelist_to_human_ref(site_list)
-    with open('sm_cache.pkl', 'wb') as f:
-        import pickle
-        pickle.dump(sm._cache, f)
-    site_ctr, examples = site_cache_stats()
-    """
+        print("Unrecognized arguments.")
 
