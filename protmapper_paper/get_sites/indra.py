@@ -3,6 +3,7 @@ import pickle
 import itertools
 from collections import Counter
 from indra.tools import assemble_corpus as ac
+from indra_db.util import get_primary_db, get_raw_stmts_frm_db_list
 
 
 def get_db_phos_stmts(filename):
@@ -14,6 +15,35 @@ def get_db_phos_stmts(filename):
     with open(filename, 'wb') as f:
         pickle.dump(phos_stmts, f)
     return phos_stmts
+
+
+def get_db_mod_agent_stmts(filename):
+    def has_mod_agents(stmt):
+        mod_agents = []
+        for agent in stmt.agent_list():
+            if agent is not None:
+                for mc in agent.mods:
+                    if has_site_pos(mc):
+                        return True
+        return False
+
+    def has_site_pos(mc):
+        return mc.position is not None and mc.residue is not None
+    batch_size = 10000
+    db = get_primary_db()
+    site_stmts = []
+    for idx, db_stmt_batch in db.select_all_batched(
+        batch_size, db.RawStatements, db.RawStatements.reading_id.isnot(None)):
+        stmt_tuples = get_raw_stmts_frm_db_list(db, db_stmt_batch)
+        stmts = [s[1] for s in stmt_tuples]
+        for stmt in stmts:
+            if has_mod_agents(stmt):
+                site_stmts.append(stmt)
+        print('Finished batch %d' % idx)
+        print('Currently have %d site statements' % len(site_stmts))
+    with open(filename, 'wb') as f:
+        pickle.dump(site_stmts, f)
+    return site_stmts
 
 
 def preprocess_db_stmts(stmts, output_file):
@@ -90,6 +120,7 @@ def get_reader_sites(input_file):
 
 
 if __name__ == '__main__':
+    '''
     # Get statements from INDRA database
     if sys.argv[1] == 'get_phos_stmts':
         get_db_phos_stmts(sys.argv[2])
@@ -110,4 +141,5 @@ if __name__ == '__main__':
         get_reader_sites(input_file)
     else:
         print("Unrecognized arguments.")
-
+    '''
+    get_db_mod_agent_stmts('x')
