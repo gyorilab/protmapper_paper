@@ -132,15 +132,10 @@ if __name__ == '__main__':
     elif sys.argv[1] == 'preprocess_stmts':
         input_file = sys.argv[2]
         output_file = sys.argv[3]
-        filter_stmt_site = sys.argv[4]
+        filter_stmt_site = True if sys.argv[4] == 'true' else False
         input_stmts = ac.load_statements(input_file)
         preproc_stmts = preprocess_db_stmts(input_stmts, output_file,
                                             filter_stmt_site)
-    elif sys.argv[1] == 'get_agent_mod_stmts':
-        input_file = sys.argv[2]
-        output_file = sys.argv[3]
-        input_stmts = ac.load_statements(input_file)
-        preproc_stmts = preprocess_db_stmts(input_stmts, output_file)
     elif sys.argv[1] == 'stmts_by_site':
         input_file = sys.argv[2]
         reader = sys.argv[3]
@@ -152,5 +147,3 @@ if __name__ == '__main__':
         get_reader_sites(input_file)
     else:
         print("Unrecognized arguments.")
-    '''
-    get_db_agent_mmod_stmts('')
