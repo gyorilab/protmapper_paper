@@ -60,11 +60,11 @@ $(OUTPUT)/indra_agent_mod_stmts_gmap_uniq_respos.pkl: $(OUTPUT)/indra_agent_mod_
 
 $(OUTPUT)/indra_reach_agent_mod.sites.pkl: \
     $(OUTPUT)/indra_agent_mod_stmts_gmap_uniq_respos.pkl
-	python -m protmapper_paper.get_sites.indra stmts_by_site $< reach $@
+	python -m protmapper_paper.get_sites.indra agent_mod_stmts_by_site $< reach $@
 
 $(OUTPUT)/indra_sparser_agent_mod.sites.pkl: \
     $(OUTPUT)/indra_agent_most_stmts_gmap_uniq_respos.pkl
-	python -m protmapper_paper.get_sites.indra stmts_by_site $< sparser $@
+	python -m protmapper_paper.get_sites.indra agent_mod_stmts_by_site $< sparser $@
 
 
 # COLLECT_SITES --------------------------------------------------------------

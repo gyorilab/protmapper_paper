@@ -68,6 +68,31 @@ def preprocess_db_stmts(stmts, output_file, filter_stmt_site):
     return site_stmts
 
 
+def get_reader_agent_mod_stmts_by_site(agent_mod_stmts, reader, filename):
+    # First filter statements to those that have objects with uniprot IDs
+    stmts_by_site = {}
+    # Filter to stmts for this reader
+    reader_stmts = [s for s in agent_mod_stmts
+                    if s.evidence[0].source_api == reader]
+    for s in reader_stmts:
+        for agent in s.agent_list():
+            if agent is None:
+                continue
+            up_id = s.sub.db_refs.get('UP')
+            if not up_id:
+                continue
+            for mc in agent.mods:
+                if mc.residue is None or mc.position is None or \
+                    mc.residue not in ('S', 'T', 'Y'):
+                    continue
+                site = (up_id, mc.residue, mc.position)
+                if site not in stmts_by_site:
+                    stmts_by_site[site] = {'lhs': [], 'rhs': []}
+                stmts_by_site[site]['lhs'].append(s)
+    with open(filename, 'wb') as f:
+        pickle.dump(stmts_by_site, f)
+
+
 def get_reader_stmts_by_site(phos_stmts, reader, filename):
     # First filter statements to those that have objects with uniprot IDs
     stmts_by_site = {}
@@ -89,6 +114,7 @@ def get_reader_stmts_by_site(phos_stmts, reader, filename):
         pickle.dump(stmts_by_site, f)
 
 
+# TODO: generalize this to agent mod sites
 def get_reader_sites(input_file):
     input_stmts = ac.load_statements(input_file)
     readers = ('reach', 'sparser')
@@ -142,6 +168,12 @@ if __name__ == '__main__':
         filename = sys.argv[4]
         input_stmts = ac.load_statements(input_file)
         get_reader_stmts_by_site(input_stmts, reader, filename)
+    elif sys.argv[1] == 'agent_mod_stmts_by_site':
+        input_file = sys.argv[2]
+        reader = sys.argv[3]
+        filename = sys.argv[4]
+        input_stmts = ac.load_statements(input_file)
+        get_reader_agent_mod_stmts_by_site(input_stmts, reader, filename)
     elif sys.argv[1] == 'reader_sites':
         input_file = sys.argv[2]
         get_reader_sites(input_file)
