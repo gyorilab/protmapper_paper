@@ -41,7 +41,7 @@ $(OUTPUT)/indra_phos_stmts.pkl:
 	python -m protmapper_paper.get_sites.indra get_phos_stmts $@
 
 $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl: $(OUTPUT)/indra_phos_stmts.pkl
-	python -m protmapper_paper.get_sites.indra preprocess_stmts $< $@
+	python -m protmapper_paper.get_sites.indra preprocess_stmts $< $@ true
 
 $(OUTPUT)/indra_reach.sites.pkl: \
     $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl
@@ -49,6 +49,21 @@ $(OUTPUT)/indra_reach.sites.pkl: \
 
 $(OUTPUT)/indra_sparser.sites.pkl: \
     $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl
+	python -m protmapper_paper.get_sites.indra stmts_by_site $< sparser $@
+
+# Get modified Agent statements from INDRA DB/Reading -----------------------
+$(OUTPUT)/indra_agent_mod_stmts.pkl:
+	python -m protmapper_paper.get_sites.indra get_agent_mod_stmts $@
+
+$(OUTPUT)/indra_agent_mod_stmts_gmap_uniq_respos.pkl: $(OUTPUT)/indra_agent_mod_stmts.pkl
+	python -m protmapper_paper.get_sites.indra preprocess_stmts $< $@ false
+
+$(OUTPUT)/indra_reach_agent_mod.sites.pkl: \
+    $(OUTPUT)/indra_agent_mod_stmts_gmap_uniq_respos.pkl
+	python -m protmapper_paper.get_sites.indra stmts_by_site $< reach $@
+
+$(OUTPUT)/indra_sparser_agent_mod.sites.pkl: \
+    $(OUTPUT)/indra_agent_most_stmts_gmap_uniq_respos.pkl
 	python -m protmapper_paper.get_sites.indra stmts_by_site $< sparser $@
 
 

@@ -17,7 +17,7 @@ def get_db_phos_stmts(filename):
     return phos_stmts
 
 
-def get_db_mod_agent_stmts(filename):
+def get_db_agent_mod_stmts(filename):
     def has_mod_agents(stmt):
         mod_agents = []
         for agent in stmt.agent_list():
@@ -46,7 +46,7 @@ def get_db_mod_agent_stmts(filename):
     return site_stmts
 
 
-def preprocess_db_stmts(stmts, output_file):
+def preprocess_db_stmts(stmts, output_file, filter_stmt_site):
     """Take the statements from the database and grounding map them; """
     print("Mapping grounding")
     gmap_stmts = ac.map_grounding(stmts)
@@ -58,8 +58,11 @@ def preprocess_db_stmts(stmts, output_file):
     uniq_stmts = []
     for k, group in itertools.groupby(stmts_by_deep_hash, key=lambda x: x[0]):
         uniq_stmts.append(list(group)[0][1])
-    # Filter to statements with residue and position
-    site_stmts = [s for s in uniq_stmts if s.residue and s.position]
+    if filter_stmt_site:
+        # Filter to statements with residue and position
+        site_stmts = [s for s in uniq_stmts if s.residue and s.position]
+    else:
+        site_stmts = uniq_stmts
     # Organize into a dictionary indexed by site
     ac.dump_statements(site_stmts, output_file)
     return site_stmts
@@ -120,12 +123,20 @@ def get_reader_sites(input_file):
 
 
 if __name__ == '__main__':
-    '''
     # Get statements from INDRA database
     if sys.argv[1] == 'get_phos_stmts':
         get_db_phos_stmts(sys.argv[2])
+    elif sys.argv[1] == 'get_agent_mod_stmts':
+        get_db_agent_mod_stmts(sys.argv[2])
     # Map grounding, remove identical statements
     elif sys.argv[1] == 'preprocess_stmts':
+        input_file = sys.argv[2]
+        output_file = sys.argv[3]
+        filter_stmt_site = sys.argv[4]
+        input_stmts = ac.load_statements(input_file)
+        preproc_stmts = preprocess_db_stmts(input_stmts, output_file,
+                                            filter_stmt_site)
+    elif sys.argv[1] == 'get_agent_mod_stmts':
         input_file = sys.argv[2]
         output_file = sys.argv[3]
         input_stmts = ac.load_statements(input_file)
@@ -142,4 +153,4 @@ if __name__ == '__main__':
     else:
         print("Unrecognized arguments.")
     '''
-    get_db_mod_agent_stmts('x')
+    get_db_agent_mmod_stmts('')
