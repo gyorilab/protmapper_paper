@@ -29,20 +29,21 @@ def get_db_agent_mod_stmts(filename):
 
     def has_site_pos(mc):
         return mc.position is not None and mc.residue is not None
-    batch_size = 10000
+    batch_size = 100000
     db = get_primary_db()
     site_stmts = []
     for idx, db_stmt_batch in db.select_all_batched(
         batch_size, db.RawStatements, db.RawStatements.reading_id.isnot(None)):
-        stmt_tuples = get_raw_stmts_frm_db_list(db, db_stmt_batch)
+        stmt_tuples = get_raw_stmts_frm_db_list(db, db_stmt_batch,
+                                                fix_refs=False)
         stmts = [s[1] for s in stmt_tuples]
         for stmt in stmts:
             if has_mod_agents(stmt):
                 site_stmts.append(stmt)
         print('Finished batch %d' % idx)
         print('Currently have %d site statements' % len(site_stmts))
-    with open(filename, 'wb') as f:
-        pickle.dump(site_stmts, f)
+        with open(filename, 'wb') as f:
+            pickle.dump(site_stmts, f)
     return site_stmts
 
 
