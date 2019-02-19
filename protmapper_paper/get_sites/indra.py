@@ -79,7 +79,7 @@ def get_reader_agent_mod_stmts_by_site(agent_mod_stmts, reader, filename):
         for agent in s.agent_list():
             if agent is None:
                 continue
-            up_id = s.sub.db_refs.get('UP')
+            up_id = agent.db_refs.get('UP')
             if not up_id:
                 continue
             for mc in agent.mods:
