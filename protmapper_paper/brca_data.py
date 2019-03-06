@@ -9,16 +9,16 @@ from indra.databases import uniprot_client, hgnc_client
 from protmapper import ProtMapper
 
 
-BRCA_DATA = 'data/breast_phosphosites.txt'
-UP_MAPPINGS = 'data/HUMAN_9606_idmapping.dat'
-BRCA_MAPPED = 'output/brca_up_mappings.txt'
 
 
 if __name__ == '__main__':
     if sys.argv[1] == 'map_uniprot':
+        brca_data = sys.argv[2]
+        up_mappings = sys.argv[3]
+        brca_mapped = sys.argv[4]
         # Build Refseq -> Uniprot Mappings
         rs_up = {}
-        with open(UP_MAPPINGS, 'rt') as f:
+        with open(up_mappings, 'rt') as f:
             csvreader = csv.reader(f, delimiter='\t')
             for up_id, other_db, other_id in csvreader:
                 if other_db == 'RefSeq':
@@ -28,7 +28,7 @@ if __name__ == '__main__':
                         rs_up[other_id] = [up_id]
         # Parse the BRCA data and add UP IDs where available
         brca_data = []
-        with open(BRCA_DATA, 'rt') as f:
+        with open(brca_data, 'rt') as f:
             lines = f.readlines()
             for ix, line in enumerate(lines[1:]): # Skip the header line
                 if ix % 100 == 0:
@@ -54,18 +54,19 @@ if __name__ == '__main__':
                     if not np.all(valid):
                         print("%d: Site not valid: %s" % (ix, str(site)))
                 brca_data.append(site)
-        with open(BRCA_MAPPED, 'wt') as f:
+        with open(brca_mapped, 'wt') as f:
             csvwriter = csv.writer(f, delimiter='\t')
             csvwriter.writerows(brca_data)
     elif sys.argv[1] == 'site_stats':
         pm = ProtMapper()
         # Load INDRA statements, sorted by site
         indra_stmts_filename = sys.argv[2]
-        output_filename = sys.argv[3]
+        brca_mapped = sys.argv[3]
+        output_filename = sys.argv[4]
         with open(indra_stmts_filename, 'rb') as f:
             stmts_by_site = pickle.load(f)
         # Load the BRCA peptides with uniprot IDs
-        df = pd.read_csv(BRCA_MAPPED, delimiter='\t')
+        df = pd.read_csv(brca_mapped, delimiter='\t')
         no_up_id = 0
         no_valid_up = 0
         has_stmts = 0

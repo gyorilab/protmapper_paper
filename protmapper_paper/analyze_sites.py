@@ -23,6 +23,8 @@ def create_site_csv(site_dict, mapping_results, csv_file):
                     continue
                 elif side == 'rhs':
                     none_enz = [s for s in stmts if s.agent_list() is None]
+                    with_enz = len(stmts) - len(none_enz)
+                    if 
                     # Add count for stmts without subject
                     all_sites.append([
                            source, ms.gene_name, ms.up_id, ms.error_code,
@@ -151,6 +153,10 @@ def get_sites_by_source(sites_dict, source, side):
     return filt_dict
 
 
+def site_sample(all_sites_file, output_file):
+    all_sites = pd.read_csv(all_sites_file, dtype={'ORIG_POS': 'str'})
+    return all_sites
+
 if __name__ == '__main__':
     # Create a single CSV file containing information about all sites from
     # databases
@@ -168,3 +174,8 @@ if __name__ == '__main__':
         input_file = sys.argv[2]
         output_base = sys.argv[3]
         plot_site_stats(input_file, output_base)
+    elif sys.argv[1] == 'site_samples':
+        all_sites_file = sys.argv[2]
+        output_file = sys.argv[3]
+        sample = site_sample(all_sites_file, output_file)
+

@@ -132,16 +132,24 @@ $(PLOTS)/site_stats_by_site.pdf: $(OUTPUT)/site_info.csv
 #    $(OUTPUT)/psp_kinase_substrate_tsv.pkl
 #	python psp_reading_venn.py
 
+
+# SITE SAMPLE ----------------------------------------------
+# Plots on correctness/mappability
+$(OUTPUT)/site_sample.csv: $(OUTPUT)/site_info.csv
+	python -m protmapper_paper.analyze_sites site_samples $< $@
+
+
 # BRCA data ----------------------------------------------------------
 $(OUTPUT)/brca_up_mappings.txt: \
     $(DATA)/breast_phosphosites.txt \
     $(DATA)/HUMAN_9606_idmapping.dat
-	python brca_data.py map_uniprot
+	python -m protmapper_paper.brca_data map_uniprot $< $(word 2,$^) $@
 
-#$(OUTPUT)/brca_site_stats.txt: \
-#    $(OUTPUT)/indra_stmts_by_site.pkl \
-#    $(OUTPUT)/brca_up_mappings.txt
-#	python brca_data.py site_stats $< $@
+
+$(OUTPUT)/brca_site_stats.txt: \
+    $(OUTPUT)/all_sites.pkl \
+    $(OUTPUT)/brca_up_mappings.txt
+	python -m protmapper_paper.brca_data site_stats $< $(word 2,$^) $@
 
 
 # MOUSE data ---------------------------------------------------------
