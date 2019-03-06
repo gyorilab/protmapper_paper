@@ -110,7 +110,9 @@ $(OUTPUT)/all_sites.pkl: \
     $(OUTPUT)/PathwayCommons10.wp.BIOPAX.sites.pkl \
     $(OUTPUT)/Kinase_substrates.sites.pkl \
     $(OUTPUT)/indra_reach.sites.pkl \
-    $(OUTPUT)/indra_sparser.sites.pkl
+    $(OUTPUT)/indra_sparser.sites.pkl \
+    $(OUTPUT)/indra_reach_agent_mod.sites.pkl \
+    $(OUTPUT)/indra_sparser_agent_mod.sites.pkl
 	python -m protmapper_paper.get_sites.combine $@ $(OUTPUT)/*.sites.pkl
 
 $(OUTPUT)/mapping_results.pkl: $(OUTPUT)/all_sites.pkl
