@@ -3,7 +3,8 @@ import pickle
 import pandas
 
 df = pandas.read_csv('../output/site_info.csv')
-df = df[(df['SOURCE'] == 'reach') | (df['SOURCE'] == 'sparser')]
+df = df[(df['SOURCE'] == 'reach') | (df['SOURCE'] == 'sparser') | 
+        (df['SOURCE'] == 'rlimsp')]
 df = df[df['VALID'] == False]
 freq = numpy.array(df.FREQ) / numpy.sum(df.FREQ)
 samples = [list(numpy.random.multinomial(1, freq)).index(1)
@@ -14,6 +15,8 @@ with open('../output/indra_reach.sites.pkl', 'rb') as fh:
     reach_sites = pickle.load(fh)
 with open('../output/indra_sparser.sites.pkl', 'rb') as fh:
     sparser_sites = pickle.load(fh)
+with open('../output/indra_rlimsp.sites.pkl', 'rb') as fh:
+    rlimsp_sites = pickle.load(fh)
 
 sentences = []
 for _, row in df_sample.iterrows():

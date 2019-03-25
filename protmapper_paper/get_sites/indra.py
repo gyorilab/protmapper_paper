@@ -118,7 +118,7 @@ def get_reader_stmts_by_site(phos_stmts, reader, filename):
 # TODO: generalize this to agent mod sites
 def get_reader_sites(input_file):
     input_stmts = ac.load_statements(input_file)
-    readers = ('reach', 'sparser')
+    readers = ('reach', 'sparser', 'rlimsp')
     pm = ProtMapper(use_cache=True, cache_path=CACHE_PATH)
     sites_by_reader = {}
     # For all readers
