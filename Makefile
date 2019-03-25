@@ -31,7 +31,8 @@ clean:
 
 
 agent_mods: $(OUTPUT)/indra_sparser_agent_mod.sites.pkl \
-            $(OUTPUT)/indra_reach_agent_mod.sites.pkl
+            $(OUTPUT)/indra_reach_agent_mod.sites.pkl \
+            $(OUTPUT)/indra_rlimsp_agent_mod.sites.pkl
 
 # DATA -----------------------------------------------------------------------
 
@@ -50,6 +51,10 @@ $(OUTPUT)/indra_reach.sites.pkl: \
     $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl
 	python -m protmapper_paper.get_sites.indra stmts_by_site $< reach $@
 
+$(OUTPUT)/indra_rlimsp.sites.pkl: \
+    $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl
+	python -m protmapper_paper.get_sites.indra stmts_by_site $< rlimsp $@
+
 $(OUTPUT)/indra_sparser.sites.pkl: \
     $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl
 	python -m protmapper_paper.get_sites.indra stmts_by_site $< sparser $@
@@ -64,6 +69,10 @@ $(OUTPUT)/indra_agent_mod_stmts_gmap_uniq_respos.pkl: $(OUTPUT)/indra_agent_mod_
 $(OUTPUT)/indra_reach_agent_mod.sites.pkl: \
     $(OUTPUT)/indra_agent_mod_stmts_gmap_uniq_respos.pkl
 	python -m protmapper_paper.get_sites.indra agent_mod_stmts_by_site $< reach $@
+
+$(OUTPUT)/indra_rlimsp_agent_mod.sites.pkl: \
+    $(OUTPUT)/indra_agent_mod_stmts_gmap_uniq_respos.pkl
+	python -m protmapper_paper.get_sites.indra agent_mod_stmts_by_site $< rlimsp $@
 
 $(OUTPUT)/indra_sparser_agent_mod.sites.pkl: \
     $(OUTPUT)/indra_agent_mod_stmts_gmap_uniq_respos.pkl
@@ -111,8 +120,10 @@ $(OUTPUT)/all_sites.pkl: \
     $(OUTPUT)/Kinase_substrates.sites.pkl \
     $(OUTPUT)/indra_reach.sites.pkl \
     $(OUTPUT)/indra_sparser.sites.pkl \
+    $(OUTPUT)/indra_rlimsp.sites.pkl \
     $(OUTPUT)/indra_reach_agent_mod.sites.pkl \
-    $(OUTPUT)/indra_sparser_agent_mod.sites.pkl
+    $(OUTPUT)/indra_sparser_agent_mod.sites.pkl \
+    $(OUTPUT)/indra_rlimsp_agent_mod.sites.pkl
 	python -m protmapper_paper.get_sites.combine $@ $(OUTPUT)/*.sites.pkl
 
 $(OUTPUT)/mapping_results.pkl: $(OUTPUT)/all_sites.pkl
