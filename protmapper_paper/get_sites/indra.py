@@ -7,27 +7,40 @@ from indra.tools import assemble_corpus as ac
 from indra_db.util import get_primary_db, get_raw_stmts_frm_db_list
 
 
-def get_db_phos_stmts(filename, rlimsp_medline_json, rlimsp_pmc_json):
+def get_all_indra_phos_stmts(filename, db_pkl, rlimsp_pkl):
+    with open(db_pkl, 'rb') as fh:
+        db_stmts = pickle.load(fh)
+    with open(rlimsp_pkl, 'rb') as fh:
+        rlimsp_stmts = pickle.load(fh)
+    with open(filename, 'wb') as fh:
+        pickle.dump(db_stmts + rlimsp_stmts, fh)
+
+
+def get_db_phos_stmts(filename):
     from indra_db.client import get_statements_by_gene_role_type
     phos_stmts = get_statements_by_gene_role_type(
                         stmt_type='Phosphorylation', fix_refs=False,
                         preassembled=False,
                         with_evidence=True, with_support=False)
+    #with open(filename, 'rb') as fh:
+    #    phos_stmts = pickle.load(fh)
+
+
+def get_rlimsp_phos_stmts(filename, rlimsp_medline_json, rlimsp_pmc_json):
     # Add on all the RLIMS-P statements loaded separately
-    rp_stmts1 = get_rlimsp_phos_stmts(rlimsp_medline_json, doc_id_type='pmid')
-    rp_stmts2 = get_rlimsp_phos_stmts(rlimsp_pmc_json)
-    phos_stmts += rp_stmts1 + rp_stmts2
+    rp_stmts1 = rlimsp.process_from_json_file(rlimsp_medline_json,
+                                              doc_id_type='pmid').statements
+    rp_stmts2 = rlimsp.process_from_json_file(rlimsp_pmc_json).statements
+    stmts = rp_stmts1 + rp_stmts2
     with open(filename, 'wb') as f:
-        pickle.dump(phos_stmts, f)
-    return phos_stmts
+        pickle.dump(stmts, f)
+    return stmts
 
 
-def get_rlimsp_phos_stmts(filename, doc_id_type=None):
-    rp = rlimsp.process_from_json_file(filename, doc_id_type)
-    return rp.statements
-
-
-def get_db_agent_mod_stmts(filename):
+def get_db_agent_mod_stmts(filename, cached=True):
+    with open(filename, 'rb') as fh:
+        site_stmts = pickle.load(fh)
+        return site_stmts
     def has_mod_agents(stmt):
         mod_agents = []
         for agent in stmt.agent_list():
@@ -161,8 +174,12 @@ def get_reader_sites(input_file):
 
 if __name__ == '__main__':
     # Get statements from INDRA database
-    if sys.argv[1] == 'get_phos_stmts':
-        get_db_phos_stmts(*sys.argv[2:5])
+    if sys.argv[1] == 'get_db_phos_stmts':
+        get_db_phos_stmts(sys.argv[2])
+    elif sys.argv[1] == 'get_rlimsp_phos_stmts':
+        get_rlimsp_phos_stmts(*sys.argv[2:5])
+    elif sys.argv[1] == 'get_all_indra_phos_stmts':
+        get_all_indra_phos_stmts(*sys.argv[2:5])
     elif sys.argv[1] == 'get_agent_mod_stmts':
         get_db_agent_mod_stmts(sys.argv[2])
     # Map grounding, remove identical statements
