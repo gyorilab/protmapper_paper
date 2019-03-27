@@ -20,7 +20,12 @@ with open('../output/indra_rlimsp.sites.pkl', 'rb') as fh:
 
 sentences = []
 for _, row in df_sample.iterrows():
-    std = reach_sites if row['SOURCE'] == 'reach' else sparser_sites
+    if row['SOURCE'] == 'reach':
+        std = reach_sites
+    elif row['SOURCE'] == 'sparser':
+        std = sparser_sites
+    else:
+        std = rlimsp_sites
     key = (row['UP_ID'], row['ORIG_RES'], str(int(row['ORIG_POS'])))
     stmts = std[key]['rhs']
     sentences.append(stmts[0].evidence[0].text)
