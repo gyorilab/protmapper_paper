@@ -22,8 +22,8 @@ def get_db_phos_stmts(filename):
                         stmt_type='Phosphorylation', fix_refs=False,
                         preassembled=False,
                         with_evidence=True, with_support=False)
-    #with open(filename, 'rb') as fh:
-    #    phos_stmts = pickle.load(fh)
+    with open(filename, 'wb') as f:
+        pickle.dump(phos_stmts, f)
 
 
 def get_rlimsp_phos_stmts(filename, rlimsp_medline_json, rlimsp_pmc_json):
