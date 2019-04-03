@@ -15,8 +15,10 @@ FILE_SOURCE_MAP = {
     'signor.sites.pkl': 'signor',
     'indra_reach.sites.pkl': 'reach',
     'indra_sparser.sites.pkl': 'sparser',
+    'indra_rlimsp.sites.pkl': 'rlimsp',
     'indra_reach_agent_mod.sites.pkl': 'reach',
     'indra_sparser_agent_mod.sites.pkl': 'sparser',
+    'indra_rlimsp_agent_mod.sites.pkl': 'rlimsp',
 }
 
 

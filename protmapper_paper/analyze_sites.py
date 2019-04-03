@@ -24,7 +24,6 @@ def create_site_csv(site_dict, mapping_results, csv_file):
                 elif side == 'rhs':
                     none_enz = [s for s in stmts if s.agent_list() is None]
                     with_enz = len(stmts) - len(none_enz)
-                    if 
                     # Add count for stmts without subject
                     all_sites.append([
                            source, ms.gene_name, ms.up_id, ms.error_code,
