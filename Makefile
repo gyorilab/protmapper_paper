@@ -153,7 +153,7 @@ $(PLOTS)/site_stats_by_site.pdf: $(OUTPUT)/site_info.csv
 
 
 # SITE SAMPLE ----------------------------------------------
-# Plots on correctness/mappability
+# Sample of sites for curation
 $(OUTPUT)/site_sample.csv: $(OUTPUT)/site_info.csv
 	python -m protmapper_paper.analyze_sites site_samples $< $@
 

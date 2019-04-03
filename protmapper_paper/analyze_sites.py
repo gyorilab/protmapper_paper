@@ -22,7 +22,7 @@ def create_site_csv(site_dict, mapping_results, csv_file):
                 if len(stmts) == 0:
                     continue
                 elif side == 'rhs':
-                    none_enz = [s for s in stmts if s.agent_list() is None]
+                    none_enz = [s for s in stmts if s.agent_list()[0] is None]
                     with_enz = len(stmts) - len(none_enz)
                     # Add count for stmts without subject
                     all_sites.append([
