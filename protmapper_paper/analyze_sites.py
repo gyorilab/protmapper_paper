@@ -11,7 +11,7 @@ from indra.util import plot_formatting as pf
 
 def create_site_csv(site_dict, mapping_results, csv_file):
     header = ['SOURCE', 'GENE_NAME', 'UP_ID', 'ERROR_CODE', 'VALID', 'ORIG_RES',
-              'ORIG_POS', 'MAPPED_RES', 'MAPPED_POS', 'DESCRIPTION',
+              'ORIG_POS', 'MAPPED_ID', 'MAPPED_RES', 'MAPPED_POS', 'DESCRIPTION',
               'SIDE', 'HAS_SUBJECT', 'FREQ']
     all_sites = [header]
     for site in site_dict:
@@ -27,20 +27,20 @@ def create_site_csv(site_dict, mapping_results, csv_file):
                     # Add count for stmts without subject
                     all_sites.append([
                            source, ms.gene_name, ms.up_id, ms.error_code,
-                           ms.valid, ms.orig_res, ms.orig_pos, ms.mapped_res,
-                           ms.mapped_pos, ms.description, side, False,
-                           len(none_enz)])
+                           ms.valid, ms.orig_res, ms.orig_pos, ms.mapped_id,
+                           ms.mapped_res, ms.mapped_pos, ms.description, side,
+                           False, len(none_enz)])
                     # Add count for stmts *with* subject
                     all_sites.append([
                            source, ms.gene_name, ms.up_id, ms.error_code,
-                           ms.valid, ms.orig_res, ms.orig_pos, ms.mapped_res,
-                           ms.mapped_pos, ms.description, side, True,
-                           len(stmts) - len(none_enz)])
+                           ms.valid, ms.orig_res, ms.orig_pos, ms.mapped_id,
+                           ms.mapped_res, ms.mapped_pos, ms.description, side,
+                           True, len(stmts) - len(none_enz)])
                 else:
                     all_sites.append([
                            source, ms.gene_name, ms.up_id, ms.error_code,
-                           ms.valid, ms.orig_res, ms.orig_pos, ms.mapped_res,
-                           ms.mapped_pos, ms.description, side,
+                           ms.valid, ms.orig_res, ms.orig_pos, ms.mapped_id,
+                           ms.mapped_res, ms.mapped_pos, ms.description, side,
                            True, len(stmts)])
     print("Saving %d entries to %s" % (len(all_sites)-1, csv_file))
     with open(csv_file, 'wt') as f:
