@@ -1,6 +1,11 @@
 import sys
 import pickle
+import logging
 from protmapper import ProtMapper
+
+
+logger = logging.getLogger('map_sites')
+
 
 def map_sites(sites_dict):
     """Tabulate valid, invalid, and mapped sites from a set of Agents."""
@@ -14,8 +19,8 @@ def map_sites(sites_dict):
             ms = pm.map_to_human_ref(up_id, 'uniprot', res, pos)
             site_map[site] = ms
         except Exception as e:
-            print("Error: %s" % str(e))
-            print("up_id: %s, res %s, pos %s" % (up_id, res, pos))
+            logger.exception(e)
+            logger.info("up_id: %s, res %s, pos %s" % (up_id, res, pos))
     # Now that we've collected a list of all the sites, tabulate frequencies
     return site_map
 
