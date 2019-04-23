@@ -1,6 +1,7 @@
 import csv
 import sys
 import pickle
+from collections import Counter
 import matplotlib
 matplotlib.use('agg')
 import pandas as pd
@@ -9,12 +10,17 @@ from matplotlib import pyplot as plt
 from indra.util import plot_formatting as pf
 
 
-def create_site_csv(site_dict, mapping_results, csv_file):
-    header = ['SOURCE', 'GENE_NAME', 'UP_ID', 'ERROR_CODE', 'VALID', 'ORIG_RES',
-              'ORIG_POS', 'MAPPED_ID', 'MAPPED_RES', 'MAPPED_POS',
+def create_site_csv(site_dict, mapping_results, site_file, annot_file):
+    site_header = ['SOURCE', 'GENE_NAME', 'UP_ID', 'ERROR_CODE', 'VALID',
+              'ORIG_RES', 'ORIG_POS', 'MAPPED_ID', 'MAPPED_RES', 'MAPPED_POS',
+              'DESCRIPTION', 'SIDE', 'CTRL_NAME', 'CTRL_NS', 'CTRL_ID',
+              'CTRL_IS_PROTEIN', 'CTRL_FREQ']
+    ann_header = ['SOURCE', 'GENE_NAME', 'UP_ID', 'ERROR_CODE', 'VALID',
+              'ORIG_RES', 'ORIG_POS', 'MAPPED_ID', 'MAPPED_RES', 'MAPPED_POS',
               'DESCRIPTION', 'SIDE', 'HAS_SUBJECT', 'FREQ', 'TOTAL_CONTROLLERS',
               'PROTEIN_CONTROLLERS']
-    all_sites = [header]
+    all_sites = [site_header]
+    annotations = [ann_header]
     for site in site_dict:
         ms = mapping_results[site]
         up_id, res, pos = site
@@ -27,15 +33,26 @@ def create_site_csv(site_dict, mapping_results, csv_file):
                     with_enz = [s for s in stmts
                                 if s.agent_list()[0] is not None]
                     # Count distinct controllers and protein controllers
-                    total_controllers = set()
+                    total_controllers = []
                     protein_controllers = set()
                     for s in with_enz:
                         ctrl = s.agent_list()[0]
-                        total_controllers.add(ctrl.name)
-                        if 'FPLX' in ctrl.db_refs:
-                            protein_controllers.add(ctrl.db_refs['FPLX'])
-                        elif 'UP' in ctrl.db_refs:
-                            protein_controllers.add(ctrl.db_refs['UP'])
+                        db_ns, db_id = ctrl.get_grounding()
+                        if db_ns is None or db_id is None:
+                            continue
+                        total_controllers.append((ctrl.name, db_ns, db_id))
+                        if db_ns in ('FPLX', 'HGNC', 'UP'):
+                            protein_controllers.add((ctrl.name, db_ns, db_id))
+                    ctrl_ctr = Counter(total_controllers)
+                    for (cname, cns, cid), cfreq in ctrl_ctr.items():
+                        is_protein = True if cns in ('FPLX', 'HGNC', 'UP') \
+                                          else False
+                        ann = [
+                           source, ms.gene_name, ms.up_id, ms.error_code,
+                           ms.valid, ms.orig_res, ms.orig_pos, ms.mapped_id,
+                           ms.mapped_res, ms.mapped_pos, ms.description,
+                           side, cname, cns, cid, is_protein, cfreq]
+                        annotations.append(ann)
                     # Add count for stmts without subject
                     if len(none_enz) > 0:
                         all_sites.append([
@@ -50,18 +67,22 @@ def create_site_csv(site_dict, mapping_results, csv_file):
                                ms.valid, ms.orig_res, ms.orig_pos, ms.mapped_id,
                                ms.mapped_res, ms.mapped_pos, ms.description,
                                side, True, len(with_enz),
-                               len(total_controllers),
-                               len(protein_controllers)])
+                               len(ctrl_ctr), len(protein_controllers)])
                 else:
                     all_sites.append([
                            source, ms.gene_name, ms.up_id, ms.error_code,
                            ms.valid, ms.orig_res, ms.orig_pos, ms.mapped_id,
                            ms.mapped_res, ms.mapped_pos, ms.description, side,
                            True, len(stmts)])
-    print("Saving %d entries to %s" % (len(all_sites)-1, csv_file))
-    with open(csv_file, 'wt') as f:
+    print("Saving %d site entries to %s" % (len(all_sites)-1, site_file))
+    with open(site_file, 'wt') as f:
         csvwriter = csv.writer(f)
         csvwriter.writerows(all_sites)
+    print("Saving %d annotation entries to %s" %
+                        (len(annotations)-1, annot_file))
+    with open(annot_file, 'wt') as f:
+        csvwriter = csv.writer(f)
+        csvwriter.writerows(annotations)
 
 
 def print_stats(site_df):
@@ -179,11 +200,12 @@ if __name__ == '__main__':
         site_dict_file = sys.argv[2]
         mapping_results_file = sys.argv[3]
         csv_file = sys.argv[4]
+        annot_file = sys.argv[5]
         with open(site_dict_file, 'rb') as f:
             site_dict = pickle.load(f)
         with open(mapping_results_file, 'rb') as f:
             mapping_results = pickle.load(f)
-        create_site_csv(site_dict, mapping_results, csv_file)
+        create_site_csv(site_dict, mapping_results, csv_file, annot_file)
     # Load the CSV file and plot site statistics
     elif sys.argv[1] == 'plot_site_stats':
         input_file = sys.argv[2]
