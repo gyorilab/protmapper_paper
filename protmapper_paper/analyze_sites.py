@@ -13,12 +13,12 @@ from indra.util import plot_formatting as pf
 def create_site_csv(site_dict, mapping_results, site_file, annot_file):
     site_header = ['SOURCE', 'GENE_NAME', 'UP_ID', 'ERROR_CODE', 'VALID',
               'ORIG_RES', 'ORIG_POS', 'MAPPED_ID', 'MAPPED_RES', 'MAPPED_POS',
-              'DESCRIPTION', 'SIDE', 'CTRL_NAME', 'CTRL_NS', 'CTRL_ID',
-              'CTRL_IS_PROTEIN', 'CTRL_FREQ']
-    ann_header = ['SOURCE', 'GENE_NAME', 'UP_ID', 'ERROR_CODE', 'VALID',
-              'ORIG_RES', 'ORIG_POS', 'MAPPED_ID', 'MAPPED_RES', 'MAPPED_POS',
               'DESCRIPTION', 'SIDE', 'HAS_SUBJECT', 'FREQ', 'TOTAL_CONTROLLERS',
               'PROTEIN_CONTROLLERS']
+    ann_header = ['SOURCE', 'GENE_NAME', 'UP_ID', 'ERROR_CODE', 'VALID',
+              'ORIG_RES', 'ORIG_POS', 'MAPPED_ID', 'MAPPED_RES', 'MAPPED_POS',
+              'DESCRIPTION', 'SIDE', 'CTRL_NAME', 'CTRL_NS', 'CTRL_ID',
+              'CTRL_IS_PROTEIN', 'CTRL_FREQ']
     all_sites = [site_header]
     annotations = [ann_header]
     for site in site_dict:
@@ -178,6 +178,13 @@ def plot_site_stats(csv_file, output_base):
         df.plot(kind='bar', stacked=True, color=['blue', 'orange'])
         plt.subplots_adjust(bottom=0.2)
         plt.savefig('%s_%s.pdf' % (output_base, kind))
+
+
+def plot_annot_stats(csv_file, output_base):
+    site_df = pd.read_csv(csv_file, output_base)
+    # Drop rows with error_code (invalid gene names in BEL)
+    site_df = site_df[site_df.ERROR_CODE.isna()]
+    
 
 
 def get_sites_by_source(sites_dict, source, side):
