@@ -117,7 +117,6 @@ $(OUTPUT)/reader_sites.pkl: $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl
 $(OUTPUT)/all_sites.pkl: \
     $(OUTPUT)/signor.sites.pkl \
     $(OUTPUT)/bel_large_corpus.sites.pkl \
-    $(OUTPUT)/PathwayCommons10.hprd.BIOPAX.sites.pkl \
     $(OUTPUT)/PathwayCommons10.kegg.BIOPAX.sites.pkl \
     $(OUTPUT)/PathwayCommons10.panther.BIOPAX.sites.pkl \
     $(OUTPUT)/PathwayCommons10.pid.BIOPAX.sites.pkl \

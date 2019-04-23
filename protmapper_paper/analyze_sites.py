@@ -11,8 +11,9 @@ from indra.util import plot_formatting as pf
 
 def create_site_csv(site_dict, mapping_results, csv_file):
     header = ['SOURCE', 'GENE_NAME', 'UP_ID', 'ERROR_CODE', 'VALID', 'ORIG_RES',
-              'ORIG_POS', 'MAPPED_ID', 'MAPPED_RES', 'MAPPED_POS', 'DESCRIPTION',
-              'SIDE', 'HAS_SUBJECT', 'FREQ']
+              'ORIG_POS', 'MAPPED_ID', 'MAPPED_RES', 'MAPPED_POS',
+              'DESCRIPTION', 'SIDE', 'HAS_SUBJECT', 'FREQ', 'TOTAL_CONTROLLERS',
+              'PROTEIN_CONTROLLERS']
     all_sites = [header]
     for site in site_dict:
         ms = mapping_results[site]
@@ -23,19 +24,34 @@ def create_site_csv(site_dict, mapping_results, csv_file):
                     continue
                 elif side == 'rhs':
                     none_enz = [s for s in stmts if s.agent_list()[0] is None]
-                    with_enz = len(stmts) - len(none_enz)
+                    with_enz = [s for s in stmts
+                                if s.agent_list()[0] is not None]
+                    # Count distinct controllers and protein controllers
+                    total_controllers = set()
+                    protein_controllers = set()
+                    for s in with_enz:
+                        ctrl = s.agent_list()[0]
+                        total_controllers.add(ctrl.name)
+                        if 'FPLX' in ctrl.db_refs:
+                            protein_controllers.add(ctrl.db_refs['FPLX'])
+                        elif 'UP' in ctrl.db_refs:
+                            protein_controllers.add(ctrl.db_refs['UP'])
                     # Add count for stmts without subject
-                    all_sites.append([
-                           source, ms.gene_name, ms.up_id, ms.error_code,
-                           ms.valid, ms.orig_res, ms.orig_pos, ms.mapped_id,
-                           ms.mapped_res, ms.mapped_pos, ms.description, side,
-                           False, len(none_enz)])
+                    if len(none_enz) > 0:
+                        all_sites.append([
+                               source, ms.gene_name, ms.up_id, ms.error_code,
+                               ms.valid, ms.orig_res, ms.orig_pos, ms.mapped_id,
+                               ms.mapped_res, ms.mapped_pos, ms.description,
+                               side, False, len(none_enz), 0, 0])
                     # Add count for stmts *with* subject
-                    all_sites.append([
-                           source, ms.gene_name, ms.up_id, ms.error_code,
-                           ms.valid, ms.orig_res, ms.orig_pos, ms.mapped_id,
-                           ms.mapped_res, ms.mapped_pos, ms.description, side,
-                           True, len(stmts) - len(none_enz)])
+                    if len(with_enz) > 0:
+                        all_sites.append([
+                               source, ms.gene_name, ms.up_id, ms.error_code,
+                               ms.valid, ms.orig_res, ms.orig_pos, ms.mapped_id,
+                               ms.mapped_res, ms.mapped_pos, ms.description,
+                               side, True, len(with_enz),
+                               len(total_controllers),
+                               len(protein_controllers)])
                 else:
                     all_sites.append([
                            source, ms.gene_name, ms.up_id, ms.error_code,
