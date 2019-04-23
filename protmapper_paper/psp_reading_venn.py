@@ -7,7 +7,13 @@ from matplotlib_venn import venn2, venn3
 from indra.databases import uniprot_client
 from indra.util import read_unicode_csv
 
+
 def get_kinases(stmts):
+    """Return a list of database IDs of kinases from a list of Statements.
+
+    The database IDs include UniProt IDs as well as FPLX IDs corresponding to
+    the enz argument of Phosphorylation Statements.
+    """
     kinases = set()
     for s in stmts:
         if s.enz is None:
@@ -40,7 +46,7 @@ def get_reader_sites(reader_sites, readers, stmts_by_site):
                 kinases_for_site = get_kinases(stmts_by_site[
                                          (ms.up_id, ms.orig_res, ms.orig_pos)])
             except KeyError:
-                kianses_for_site = set()
+                kinases_for_site = set()
             if ms.valid is True:
                 sites[(ms.up_id, ms.orig_res, ms.orig_pos)] |= kinases_for_site
             elif ms.valid is False:
@@ -52,7 +58,7 @@ def get_reader_sites(reader_sites, readers, stmts_by_site):
 
 def get_site_kinase_tuples(site_dict):
     return [site + (kin,) for site, kin_list in site_dict.items()
-                          for kin in kin_list]
+            for kin in kin_list]
 
 
 if __name__ == '__main__':
@@ -60,26 +66,27 @@ if __name__ == '__main__':
     psp_sites = pc.sites_only(exclude_isoforms=True)
     psp_sites = filter_human_list(psp_sites)
     # Load the reader sites
-    with open('output/indra_stmts_by_site.pkl', 'rb') as f:
+    with open('output/all_sites.pkl', 'rb') as f:
         indra_stmts_by_site = pickle.load(f)
-    with open('output/reader_sites.pkl', 'rb') as f:
-        rs = pickle.load(f) # Contains MappedSite objects
+        rs = pickle.load(f)  # Contains site tuples pointing to Statements
         reach_sites = get_reader_sites(rs, ['reach'], indra_stmts_by_site)
         sparser_sites = get_reader_sites(rs, ['sparser'], indra_stmts_by_site)
-        reader_sites = get_reader_sites(rs, ['reach', 'sparser'],
+        rlimsp_sites = get_reader_sites(rs, ['rlimsp'], indra_stmts_by_site)
+        reader_sites = get_reader_sites(rs, ['reach', 'sparser', 'rlimsp'],
                                         indra_stmts_by_site)
 
     plt.ion()
     # Sites: PSP vs. Readers
     plt.figure()
     venn2((set(psp_sites), set(reader_sites.keys())),
-          set_labels=('PhosphoSitePlus', 'REACH/Sparser'))
+          set_labels=('PhosphoSitePlus', 'REACH/Sparser/RLIMS-P'))
     plt.savefig('plots/psp_reader_site_overlap.pdf')
 
-    # Sites: REACH vs. Sparser
+    # Sites: REACH vs. Sparser vs. RLIMS-P
     plt.figure()
-    venn2((set(reach_sites.keys()), set(sparser_sites.keys())),
-          set_labels=('REACH', 'Sparser'))
+    venn3((set(reach_sites.keys()), set(sparser_sites.keys()),
+           set(rlimsp_sites.keys())),
+          set_labels=('REACH', 'Sparser', 'RLIMS-P'))
     plt.savefig('plots/reach_sparser_site_overlap.pdf')
 
     # Load the annotated sites from PSP
@@ -92,17 +99,18 @@ if __name__ == '__main__':
     reader_annots = set(get_site_kinase_tuples(reader_sites))
     reach_annots = set(get_site_kinase_tuples(reach_sites))
     sparser_annots = set(get_site_kinase_tuples(sparser_sites))
+    rlimsp_annots = set(get_site_kinase_tuples(rlimsp_sites))
 
     # Annotations: PSP vs. Readers
     plt.figure()
     venn2((ks_annots, reader_annots),
-          set_labels=('PhosphoSitePlus', 'REACH/Sparser'))
+          set_labels=('PhosphoSitePlus', 'REACH/Sparser/RLIMS-P'))
     plt.savefig('plots/psp_reader_annotation_overlap.pdf')
 
-    # Annotations: REACH vs. Sparser
+    # Annotations: REACH vs. Sparser vs. RLIMS-P
     plt.figure()
-    venn2((reach_annots, sparser_annots),
-          set_labels=('REACH', 'Sparser'))
+    venn3((reach_annots, sparser_annots, rlimsp_annots),
+          set_labels=('REACH', 'Sparser', 'RLIMS-P'))
     plt.savefig('plots/reach_sparser_annotation_overlap.pdf')
 
     # Read the kinases list
@@ -112,6 +120,7 @@ if __name__ == '__main__':
     reader_kin = set([s for s in reader_annots if s[3] in kinases])
     reach_kin = set([s for s in reach_annots if s[3] in kinases])
     sparser_kin = set([s for s in sparser_annots if s[3] in kinases])
+    rlimsp_kin = set([s for s in rlimsp_annots if s[3] in kinases])
 
     # Kinases: PSP vs. Readers
     plt.figure()
@@ -119,9 +128,9 @@ if __name__ == '__main__':
           set_labels=('PhosphoSitePlus', 'REACH/Sparser'))
     plt.savefig('plots/psp_reader_kinase_overlap.pdf')
 
-    # Kinases: REACH vs. Sparser
+    # Kinases: REACH vs. Sparser vs. RLIMS-P
     plt.figure()
-    venn2((reach_kin, sparser_kin),
-          set_labels=('REACH', 'Sparser'))
+    venn2((reach_kin, sparser_kin, rlimsp_kin),
+          set_labels=('REACH', 'Sparser', 'RLIMS-P'))
     plt.savefig('plots/reach_sparser_kinase_overlap.pdf')
 
