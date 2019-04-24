@@ -1,6 +1,11 @@
 import pandas
 from matplotlib import pyplot as plt
 from matplotlib_venn import venn2, venn3
+from indra.statements import Agent
+from indra.tools.expand_families import Expander
+from indra.databases import hgnc_client, uniprot_client
+
+expander = Expander()
 
 
 def get_source_annots(df, sources):
@@ -10,8 +15,8 @@ def get_source_annots(df, sources):
     for idx, row in df.iterrows():
         # Note that we use ORIG_RES and ORIG_POS here just because that gives
         # us unique sites whether or not the sites were mapped
-        annot_sites[(row.CTRL_ID, row.UP_ID, row.ORIG_RES, row.ORIG_POS)] = \
-            row.CTRL_FREQ
+        annot_sites[(row.CTRL_ID, row.CTRL_NS, row.UP_ID, row.ORIG_RES,
+                     row.ORIG_POS)] = row.CTRL_FREQ
     return annot_sites
 
 
@@ -53,16 +58,27 @@ def filter_all_annots(df):
     return df
 
 
-def filter_kinase_annots(df):
-    # Filter the annotations table
-    # Filter out all the rows with error code, typically for missing site or
-    # residue
-    df = df[df.ERROR_CODE.isna()]
-    # Keep only rows where the site is VALID or a mapping was found
-    df = df[df.DESCRIPTION != 'NO_MAPPING_FOUND']
-    # Filter to protein controllers only
-    df = df[df.CTRL_IS_PROTEIN == True]
-    return df
+def filter_kinase_annots(annot_sites):
+    kinase_sites = {}
+    for k, v in annot_sites.items():
+        ctrl_id, ctrl_ns, _, _, _ = k
+        if ctrl_ns == 'HGNC':
+            hgnc_id = hgnc_client.get_hgnc_id(ctrl_id)
+            up_id = hgnc_client.get_uniprot_id(hgnc_id)
+            if up_id:
+                if uniprot_client.is_kinase(up_id):
+                    kinase_sites[k] = v
+        elif ctrl_ns == 'FPLX':
+            children = expander.get_children(Agent(ctrl_id,
+                                                   db_refs={'FPLX': ctrl_id}))
+            for _, hgnc_name in children:
+                hgnc_id = hgnc_client.get_hgnc_id(hgnc_name)
+                up_id = hgnc_client.get_uniprot_id()
+                if up_id and uniprot_client.is_kinase(up_id):
+                    kinase_sites[k] = v
+                    break
+
+    return kinase_sites
 
 
 def filter_sites(df):
