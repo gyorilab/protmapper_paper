@@ -151,6 +151,11 @@ $(PLOTS)/psp_reader_sites_overlap_distinct.pdf: \
     $(OUTPUT)/annotations/csv
 	python psp_reading_venn.py
 
+# Plots on correctness/mappability
+$(PLOTS)/annotations_counts.pdf: $(OUTPUT)/annotations.csv
+	python -m protmapper_paper.analyze_sites plot_annot_stats $< \
+        $(PLOTS)/annotations
+
 
 # SITE SAMPLE ----------------------------------------------
 # Sample of sites for curation

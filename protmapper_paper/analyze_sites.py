@@ -181,10 +181,59 @@ def plot_site_stats(csv_file, output_base):
 
 
 def plot_annot_stats(csv_file, output_base):
-    site_df = pd.read_csv(csv_file, output_base)
+    site_df = pd.read_csv(csv_file)
     # Drop rows with error_code (invalid gene names in BEL)
     site_df = site_df[site_df.ERROR_CODE.isna()]
-    
+    #sources = site_df.SOURCE.unique()
+    sources = ['psp', 'signor', 'hprd', 'pid', 'reactome', 'bel',
+               'reach', 'sparser', 'rlimsp']
+    fig = plt.figure(figsize=(1.8, 2.2), dpi=150)
+    for ix, source in enumerate(sources):
+        source_anns = site_df[site_df.SOURCE == source]
+        valid = source_anns[source_anns.VALID == True]
+        invalid = source_anns[source_anns.VALID != True]
+        unmapped = invalid[invalid.MAPPED_RES.isna() |
+                           invalid.MAPPED_POS.isna()]
+        mapped = source_anns[~source_anns.MAPPED_RES.isna() &
+                             ~source_anns.MAPPED_POS.isna()]
+        print("%s, %d, %d, %d, %d" % (source, len(valid), len(invalid),
+                                      len(unmapped), len(mapped)))
+        plt.bar(ix, height=len(valid), color='blue', label='In Ref Seq')
+        plt.bar(ix, height=len(invalid), bottom=len(valid),
+                color='red', label='Not in Ref Seq')
+        #plt.bar(ix, height=len(mapped), bottom=len(valid), color='green')
+        #plt.bar(ix, height=len(unmapped), bottom=(len(valid) + len(mapped)),
+        #        color='red')
+    plt.xticks(range(len(sources)), sources, rotation="vertical")
+    plt.ylabel('Unique Site Annotations')
+    plt.subplots_adjust(left=0.31, bottom=0.25, top=0.90)
+    #plt.legend(loc='upper right', fontsize=pf.fontsize)
+    ax = plt.gca()
+    pf.format_axis(ax)
+    plt.savefig('%s_counts.pdf' % output_base)
+
+    # Now generate the plot of invalid site proportions
+    fig = plt.figure(figsize=(1.8, 2.2), dpi=150)
+    for ix, source in enumerate(sources):
+        source_anns = site_df[site_df.SOURCE == source]
+        valid = source_anns[source_anns.VALID == True]
+        invalid = source_anns[source_anns.VALID != True]
+        #unmapped = invalid[invalid.MAPPED_RES.isna() |
+        #                   invalid.MAPPED_POS.isna()]
+        #mapped = source_anns[~source_anns.MAPPED_RES.isna() &
+        #                     ~source_anns.MAPPED_POS.isna()]
+        #print("%s, %d, %d, %d, %d" % (source, len(valid), len(invalid),
+        #                              len(unmapped), len(mapped)))
+        pct_valid = 100 * len(valid) / len(source_anns)
+        pct_invalid = 100 * len(invalid) / len(source_anns)
+        plt.bar(ix, height=pct_valid, color='blue')
+        plt.bar(ix, height=pct_invalid, bottom=pct_valid, color='red')
+    plt.xticks(range(len(sources)), sources, rotation="vertical")
+    plt.ylabel('Pct. Unique Site Annotations')
+    plt.subplots_adjust(left=0.31, bottom=0.25, top=0.90)
+    ax = plt.gca()
+    pf.format_axis(ax)
+    plt.savefig('%s_pcts.pdf' % output_base)
 
 
 def get_sites_by_source(sites_dict, source, side):
@@ -218,8 +267,10 @@ if __name__ == '__main__':
         input_file = sys.argv[2]
         output_base = sys.argv[3]
         plot_site_stats(input_file, output_base)
+    elif sys.argv[1] == 'plot_annot_stats':
+        input_file = sys.argv[2]
+        output_base = sys.argv[3]
+        plot_annot_stats(input_file, output_base)
     elif sys.argv[1] == 'site_samples':
         all_sites_file = sys.argv[2]
         output_file = sys.argv[3]
-        sample = site_sample(all_sites_file, output_file)
-
