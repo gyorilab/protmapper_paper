@@ -63,18 +63,15 @@ def filter_kinase_annots(annot_sites):
     for k, v in annot_sites.items():
         ctrl_id, ctrl_ns, _, _, _ = k
         if ctrl_ns == 'HGNC':
-            hgnc_id = hgnc_client.get_hgnc_id(ctrl_id)
-            up_id = hgnc_client.get_uniprot_id(hgnc_id)
-            if up_id:
-                if uniprot_client.is_kinase(up_id):
-                    kinase_sites[k] = v
+            if hgnc_client.is_kinase(ctrl_id):
+                print('adding site for %s' % ctrl_id)
+                kinase_sites[k] = v
         elif ctrl_ns == 'FPLX':
             children = expander.get_children(Agent(ctrl_id,
                                                    db_refs={'FPLX': ctrl_id}))
             for _, hgnc_name in children:
-                hgnc_id = hgnc_client.get_hgnc_id(hgnc_name)
-                up_id = hgnc_client.get_uniprot_id()
-                if up_id and uniprot_client.is_kinase(up_id):
+                if hgnc_client.is_kinase(hgnc_name):
+                    print('adding site for %s' % ctrl_id)
                     kinase_sites[k] = v
                     break
 
@@ -105,7 +102,7 @@ if __name__ == '__main__':
     plt.figure()
     venn2(get_venn_dict_unweighted([psp_sites, reader_sites]),
           set_labels=('PhosphoSitePlus', 'REACH/Sparser/RLIMS-P'))
-    plt.savefig('plots/psp_reader_sites_overlap_distincs.pdf')
+    plt.savefig('plots/psp_reader_sites_overlap_distinct.pdf')
 
     # Sites: REACH vs. Sparser vs. RLIMS-P
     plt.figure()
@@ -128,7 +125,7 @@ if __name__ == '__main__':
     plt.figure()
     venn2(get_venn_dict_unweighted([psp_annots, reader_annots]),
           set_labels=('PhosphoSitePlus', 'REACH/Sparser/RLIMS-P'))
-    plt.savefig('plots/psp_reader_annotation_overlap_distincs.pdf')
+    plt.savefig('plots/psp_reader_annotation_overlap_distinct.pdf')
 
     # Annotations: REACH vs. Sparser vs. RLIMS-P
     plt.figure()
@@ -136,4 +133,24 @@ if __name__ == '__main__':
                                     rlimsp_annots]),
           set_labels=('REACH', 'Sparser', 'RLIMS-P'))
     plt.savefig('plots/reader_annotation_overlap_distinct.pdf')
+
+    # Kinases only
+    psp_annots = filter_kinase_annots(psp_annots)
+    reach_annots = filter_kinase_annots(reach_annots)
+    sparser_annots = filter_kinase_annots(sparser_annots)
+    rlimsp_annots = filter_kinase_annots(rlimsp_annots)
+    reader_annots = filter_kinase_annots(reader_annots)
+
+    # Annotations: PSP vs. Readers
+    plt.figure()
+    venn2(get_venn_dict_unweighted([psp_annots, reader_annots]),
+          set_labels=('PhosphoSitePlus', 'REACH/Sparser/RLIMS-P'))
+    plt.savefig('plots/psp_reader_annotation_overlap_distinct_kinase.pdf')
+
+    # Annotations: REACH vs. Sparser vs. RLIMS-P
+    plt.figure()
+    venn3(get_venn_dict_unweighted([reach_annots, sparser_annots,
+                                    rlimsp_annots]),
+          set_labels=('REACH', 'Sparser', 'RLIMS-P'))
+    plt.savefig('plots/reader_annotation_overlap_distinct_kinase.pdf')
 
