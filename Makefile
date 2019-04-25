@@ -146,10 +146,10 @@ $(PLOTS)/site_stats_by_site.pdf: $(OUTPUT)/site_info.csv
 	python -m protmapper_paper.analyze_sites plot_site_stats $< \
         $(PLOTS)/site_stats
 
-#$(PLOTS)/psp_reader_site_overlap.pdf: \
-#    $(OUTPUT)/reader_sites.pkl \
-#    $(OUTPUT)/psp_kinase_substrate_tsv.pkl
-#	python psp_reading_venn.py
+$(PLOTS)/psp_reader_sites_overlap_distinct.pdf: \
+    $(OUTPUT)/site_info.csv \
+    $(OUTPUT)/annotations/csv
+	python psp_reading_venn.py
 
 
 # SITE SAMPLE ----------------------------------------------
