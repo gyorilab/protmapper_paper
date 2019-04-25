@@ -63,18 +63,19 @@ def filter_kinase_annots(annot_sites):
     for k, v in annot_sites.items():
         ctrl_id, ctrl_ns, _, _, _ = k
         if ctrl_ns == 'HGNC':
+            # If genes with HGNC IDs aren't known to be kinases, they will
+            # be filtered out here
             if hgnc_client.is_kinase(ctrl_id):
-                print('adding site for %s' % ctrl_id)
                 kinase_sites[k] = v
         elif ctrl_ns == 'FPLX':
             children = expander.get_children(Agent(ctrl_id,
                                                    db_refs={'FPLX': ctrl_id}))
             for _, hgnc_name in children:
                 if hgnc_client.is_kinase(hgnc_name):
-                    print('adding site for %s' % ctrl_id)
                     kinase_sites[k] = v
                     break
-
+        # The rest of the entries here typically have UP IDs that correspond
+        # to non-human proteins or aren't proteins at all.
     return kinase_sites
 
 
