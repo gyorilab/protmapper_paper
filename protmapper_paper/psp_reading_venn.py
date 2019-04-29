@@ -13,10 +13,12 @@ def get_source_annots(df, sources):
     df = df[df.SOURCE.isin(sources)]
     annot_sites = {}
     for idx, row in df.iterrows():
-        # Note that we use ORIG_RES and ORIG_POS here just because that gives
-        # us unique sites whether or not the sites were mapped
-        annot_sites[(row.CTRL_ID, row.CTRL_NS, row.UP_ID, row.ORIG_RES,
-                     row.ORIG_POS)] = row.CTRL_FREQ
+        if row.VALID:
+            annot_sites[(row.CTRL_ID, row.CTRL_NS, row.UP_ID, row.ORIG_RES,
+                         row.ORIG_POS)] = row.CTRL_FREQ
+        elif row.MAPPED_POS and row.MAPPED_RES:
+            annot_sites[(row.CTRL_ID, row.CTRL_NS, row.MAPPED_ID,
+                         row.MAPPED_RES, row.MAPPED_POS)] = row.CTRL_FREQ
     return annot_sites
 
 
@@ -25,6 +27,8 @@ def get_source_sites(df, sources):
     df = df[df.SOURCE.isin(sources)]
     sites = {}
     for idx, row in df.iterrows():
+        # Note that we use ORIG_RES and ORIG_POS here just because that gives
+        # us unique sites whether or not the sites were mapped
         sites[(row.UP_ID, row.ORIG_RES, row.ORIG_POS)] = row.FREQ
     return sites
 
@@ -55,10 +59,12 @@ def filter_all_annots(df):
     df = df[df.DESCRIPTION != 'NO_MAPPING_FOUND']
     # Filter to protein controllers only
     df = df[df.CTRL_IS_PROTEIN == True]
+    # Filter to human protein substrates only
+    df = df[df.apply(lambda x: uniprot_client.is_human(x['UP_ID']), axis=1)]
     return df
 
 
-def filter_kinase_annots(annot_sites):
+def filter_kinase_annots(annot_sites, include_fplx=True):
     kinase_sites = {}
     for k, v in annot_sites.items():
         ctrl_id, ctrl_ns, _, _, _ = k
@@ -67,7 +73,7 @@ def filter_kinase_annots(annot_sites):
             # be filtered out here
             if hgnc_client.is_kinase(ctrl_id):
                 kinase_sites[k] = v
-        elif ctrl_ns == 'FPLX':
+        elif include_fplx and ctrl_ns == 'FPLX':
             children = expander.get_children(Agent(ctrl_id,
                                                    db_refs={'FPLX': ctrl_id}))
             for _, hgnc_name in children:
@@ -136,22 +142,42 @@ if __name__ == '__main__':
     plt.savefig('plots/reader_annotation_overlap_distinct.pdf')
 
     # Kinases only
-    psp_annots = filter_kinase_annots(psp_annots)
-    reach_annots = filter_kinase_annots(reach_annots)
-    sparser_annots = filter_kinase_annots(sparser_annots)
-    rlimsp_annots = filter_kinase_annots(rlimsp_annots)
-    reader_annots = filter_kinase_annots(reader_annots)
+    psp_annotsk = filter_kinase_annots(psp_annots)
+    reach_annotsk = filter_kinase_annots(reach_annots)
+    sparser_annotsk = filter_kinase_annots(sparser_annots)
+    rlimsp_annotsk = filter_kinase_annots(rlimsp_annots)
+    reader_annotsk = filter_kinase_annots(reader_annots)
 
     # Annotations: PSP vs. Readers
     plt.figure()
-    venn2(get_venn_dict_unweighted([psp_annots, reader_annots]),
+    venn2(get_venn_dict_unweighted([psp_annotsk, reader_annotsk]),
           set_labels=('PhosphoSitePlus', 'REACH/Sparser/RLIMS-P'))
     plt.savefig('plots/psp_reader_annotation_overlap_distinct_kinase.pdf')
 
     # Annotations: REACH vs. Sparser vs. RLIMS-P
     plt.figure()
-    venn3(get_venn_dict_unweighted([reach_annots, sparser_annots,
-                                    rlimsp_annots]),
+    venn3(get_venn_dict_unweighted([reach_annotsk, sparser_annotsk,
+                                    rlimsp_annotsk]),
           set_labels=('REACH', 'Sparser', 'RLIMS-P'))
     plt.savefig('plots/reader_annotation_overlap_distinct_kinase.pdf')
+
+    # Non-FamPlex Kinases only
+    psp_annotskn = filter_kinase_annots(psp_annots, False)
+    reach_annotskn = filter_kinase_annots(reach_annots, False)
+    sparser_annotskn = filter_kinase_annots(sparser_annots, False)
+    rlimsp_annotskn = filter_kinase_annots(rlimsp_annots, False)
+    reader_annotskn = filter_kinase_annots(reader_annots, False)
+
+    # Annotations: PSP vs. Readers
+    plt.figure()
+    venn2(get_venn_dict_unweighted([psp_annotskn, reader_annotskn]),
+          set_labels=('PhosphoSitePlus', 'REACH/Sparser/RLIMS-P'))
+    plt.savefig('plots/psp_reader_annotation_overlap_distinct_kinase_nofamplex.pdf')
+
+    # Annotations: REACH vs. Sparser vs. RLIMS-P
+    plt.figure()
+    venn3(get_venn_dict_unweighted([reach_annotskn, sparser_annotskn,
+                                    rlimsp_annotskn]),
+          set_labels=('REACH', 'Sparser', 'RLIMS-P'))
+    plt.savefig('plots/reader_annotation_overlap_distinct_kinase_nofamplex.pdf')
 
