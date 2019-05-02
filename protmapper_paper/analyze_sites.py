@@ -187,7 +187,8 @@ def plot_annot_stats(csv_file, output_base):
     #sources = site_df.SOURCE.unique()
     sources = ['psp', 'signor', 'hprd', 'pid', 'reactome', 'bel',
                'reach', 'sparser', 'rlimsp']
-    fig = plt.figure(figsize=(1.8, 2.2), dpi=150)
+    fig_valid = plt.figure(figsize=(1.8, 2.2), dpi=150)
+    fig_mapped = plt.figure(figsize=(1.8, 2.2), dpi=150)
     for ix, source in enumerate(sources):
         source_anns = site_df[site_df.SOURCE == source]
         valid = source_anns[source_anns.VALID == True]
@@ -198,42 +199,62 @@ def plot_annot_stats(csv_file, output_base):
                              ~source_anns.MAPPED_POS.isna()]
         print("%s, %d, %d, %d, %d" % (source, len(valid), len(invalid),
                                       len(unmapped), len(mapped)))
-        plt.bar(ix, height=len(valid), color='blue', label='In Ref Seq')
-        plt.bar(ix, height=len(invalid), bottom=len(valid),
+        # Plot for valid stats
+        fig_valid.gca().bar(ix, height=len(valid), color='blue',
+                            label='In Ref Seq')
+        fig_valid.gca().bar(ix, height=len(invalid), bottom=len(valid),
                 color='red', label='Not in Ref Seq')
-        #plt.bar(ix, height=len(mapped), bottom=len(valid), color='green')
-        #plt.bar(ix, height=len(unmapped), bottom=(len(valid) + len(mapped)),
-        #        color='red')
+        # Plot for mapped stats
+        fig_mapped.gca().bar(ix, height=len(valid), color='blue',
+                             label='In Ref Seq')
+        fig_mapped.gca().bar(ix, height=len(mapped), bottom=len(valid),
+                             color='green')
+        fig_mapped.gca().bar(ix, height=len(unmapped),
+                             bottom=(len(valid) + len(mapped)), color='red')
     plt.xticks(range(len(sources)), sources, rotation="vertical")
     plt.ylabel('Unique Site Annotations')
     plt.subplots_adjust(left=0.31, bottom=0.25, top=0.90)
     #plt.legend(loc='upper right', fontsize=pf.fontsize)
-    ax = plt.gca()
-    pf.format_axis(ax)
-    plt.savefig('%s_counts.pdf' % output_base)
+    for fig in (fig_valid, fig_mapped):
+        ax = fig.gca()
+        pf.format_axis(ax)
+    fig_valid.savefig('%s_valid_counts.pdf' % output_base)
+    fig_mapped.savefig('%s_mapped_counts.pdf' % output_base)
 
     # Now generate the plot of invalid site proportions
-    fig = plt.figure(figsize=(1.8, 2.2), dpi=150)
+    fig_valid = plt.figure(figsize=(1.8, 2.2), dpi=150)
+    fig_mapped = plt.figure(figsize=(1.8, 2.2), dpi=150)
     for ix, source in enumerate(sources):
         source_anns = site_df[site_df.SOURCE == source]
         valid = source_anns[source_anns.VALID == True]
         invalid = source_anns[source_anns.VALID != True]
-        #unmapped = invalid[invalid.MAPPED_RES.isna() |
-        #                   invalid.MAPPED_POS.isna()]
-        #mapped = source_anns[~source_anns.MAPPED_RES.isna() &
-        #                     ~source_anns.MAPPED_POS.isna()]
-        #print("%s, %d, %d, %d, %d" % (source, len(valid), len(invalid),
-        #                              len(unmapped), len(mapped)))
+        unmapped = invalid[invalid.MAPPED_RES.isna() |
+                           invalid.MAPPED_POS.isna()]
+        mapped = source_anns[~source_anns.MAPPED_RES.isna() &
+                             ~source_anns.MAPPED_POS.isna()]
+        pct_mapped = 100 * len(mapped) / len(source_anns)
+        pct_unmapped = 100 * len(unmapped) / len(source_anns)
         pct_valid = 100 * len(valid) / len(source_anns)
         pct_invalid = 100 * len(invalid) / len(source_anns)
-        plt.bar(ix, height=pct_valid, color='blue')
-        plt.bar(ix, height=pct_invalid, bottom=pct_valid, color='red')
+        #print("%s, %d, %d, %d, %d" % (source, len(valid), len(invalid),
+        #                              len(unmapped), len(mapped)))
+        fig_valid.gca().bar(ix, height=pct_valid, color='blue')
+        fig_valid.gca().bar(ix, height=pct_invalid, bottom=pct_valid,
+                            color='red')
+        fig_mapped.gca().bar(ix, height=pct_valid, color='blue')
+        fig_mapped.gca().bar(ix, height=pct_mapped,
+                             bottom=pct_valid, color='green')
+        fig_mapped.gca().bar(ix, height=pct_unmapped,
+                             bottom=(pct_valid + pct_mapped), color='red')
+
     plt.xticks(range(len(sources)), sources, rotation="vertical")
     plt.ylabel('Pct. Unique Site Annotations')
     plt.subplots_adjust(left=0.31, bottom=0.25, top=0.90)
-    ax = plt.gca()
-    pf.format_axis(ax)
-    plt.savefig('%s_pcts.pdf' % output_base)
+    for fig in (fig_valid, fig_mapped):
+        ax = fig.gca()
+        pf.format_axis(ax)
+    fig_valid.savefig('%s_valid_pcts.pdf' % output_base)
+    fig_mapped.savefig('%s_mapped_pcts.pdf' % output_base)
 
 
 def get_sites_by_source(sites_dict, source, side):
