@@ -29,7 +29,10 @@ def get_source_sites(df, sources):
     for idx, row in df.iterrows():
         # Note that we use ORIG_RES and ORIG_POS here just because that gives
         # us unique sites whether or not the sites were mapped
-        sites[(row.UP_ID, row.ORIG_RES, row.ORIG_POS)] = row.FREQ
+        if row.VALID:
+            sites[(row.UP_ID, row.ORIG_RES, row.ORIG_POS)] = row.FREQ
+        elif row.MAPPED_POS and row.MAPPED_RES:
+            sites[(row.MAPPED_ID, row.MAPPED_RES, row.MAPPED_POS)] = row.FREQ
     return sites
 
 
@@ -91,8 +94,19 @@ def filter_sites(df):
     df = df[df.ERROR_CODE.isna()]
     # Keep only rows where the site is VALID or a mapping was found
     df = df[df.DESCRIPTION != 'NO_MAPPING_FOUND']
+    # Filter to human protein substrates only
+    df = df[df.apply(lambda x: uniprot_client.is_human(x['UP_ID']), axis=1)]
     return df
 
+
+def print_reading_contribs(reader_sites, psp_sites):
+    reader_only = set(reader_sites.keys()) - set(psp_sites.keys())
+    for ctrl_id, ctrl_ns, up_id, residue, pos in \
+            sorted(reader_only, key=lambda x: (x[0], x[2], x[4])):
+        target_name = uniprot_client.get_gene_name(up_id, web_fallback=False)
+        if target_name is None:
+            print('Could not get gene name for %s' % up_id)
+        print('%s -> %s-%s%s' % (ctrl_id, target_name, residue, int(pos)))
 
 if __name__ == '__main__':
     # SITES
@@ -181,3 +195,4 @@ if __name__ == '__main__':
           set_labels=('REACH', 'Sparser', 'RLIMS-P'))
     plt.savefig('plots/reader_annotation_overlap_distinct_kinase_nofamplex.pdf')
 
+    print_reading_contribs(reader_annotskn, psp_annotskn)
