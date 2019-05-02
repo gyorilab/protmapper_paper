@@ -1,7 +1,7 @@
 import csv
 import sys
 import pickle
-from collections import Counter
+from collections import Counter, defaultdict
 import matplotlib
 matplotlib.use('agg')
 import pandas as pd
@@ -111,13 +111,12 @@ def create_export(site_stmts, mapping_results, export_file, evs_file):
         # site, we skip the site
         ms = mapping_results[(orig_up_id, orig_res, orig_pos)]
         if ms.valid:
-            final_site_key = (ms.up_id, ms.orig_res, ms.orig_pos)
+            final_site_key = [ms.up_id, ms.orig_res, ms.orig_pos]
         elif ms.mapped_res and ms.mapped_pos:
-            final_site_key = (ms.mapped_id, ms.mapped_res, ms.mapped_pos)
+            final_site_key = [ms.mapped_id, ms.mapped_res, ms.mapped_pos]
         else:
             continue
 
-        site_info[final_site_key] = []
         # We now look at all the Statements where the given site
         # appears as a substrate and get controllers and evidences
         for source, stmts in stmt_dict['rhs'].items():
@@ -127,17 +126,20 @@ def create_export(site_stmts, mapping_results, export_file, evs_file):
                     continue
                 # We next get the grounding for the controller and
                 # if there is no grounding, we skip it
-                ctrl_ns, ctlr_id = stmt.enz.get_grounding()
+                ctrl_ns, ctrl_id = stmt.enz.get_grounding()
                 if ctrl_ns is None or ctrl_id is None:
                     continue
                 # We can now make a full key that contains the controller
                 # as well as the target and final site
-                final_annot_key = [ctrl_ns, ctrl_id] + list(final_site_key)
+                final_annot_key = tuple([ctrl_ns, ctrl_id] + final_site_key)
                 # We use this full key to store evidences and mapping details
                 if final_annot_key not in site_info:
                     site_info[final_annot_key] = idx
                     idx += 1
-                site_evidence[final_annot_key].append([stmt.evidence, ms])
+                # Note: we do get multiple pieces of evidence, e.g.,
+                # from biopax
+                for ev in stmt.evidence:
+                    site_evidence[final_annot_key].append([ev, ms])
 
     # Now make the actual export tables
     export_rows = [export_header]
@@ -378,7 +380,7 @@ if __name__ == '__main__':
         mapping_results_file = sys.argv[3]
         export_file = sys.argv[4]
         evs_file = sys.argv[5]
-        with open(site_pkl, 'rb') as fh:
+        with open(site_pkl_file, 'rb') as fh:
             site_stmts = pickle.load(fh)
         with open(mapping_results_file, 'rb') as f:
             mapping_results = pickle.load(f)
