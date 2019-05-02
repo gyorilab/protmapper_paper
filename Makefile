@@ -139,7 +139,14 @@ $(OUTPUT)/site_info.csv: \
     $(OUTPUT)/all_sites.pkl \
     $(OUTPUT)/mapping_results.pkl
 	python -m protmapper_paper.analyze_sites create_site_csv \
-        $< $(word 2,$^) $@ output/annotations.csv
+        $< $(word 2,$^) $@ $(OUTPUT)/annotations.csv
+
+# Export of all annotated sites with evidence
+$(OUTPUT)/export.csv: \
+    $(OUTPUT)/all_sites.pkl \
+    $(OUTPUT)/mapping_results.pkl
+	python -m protmapper_paper.analyze_sites export \
+        $< $(word 2,$^) $@ $(OUTPUT)/evidences.csv
 
 # Plots on correctness/mappability
 $(PLOTS)/site_stats_by_site.pdf: $(OUTPUT)/site_info.csv
