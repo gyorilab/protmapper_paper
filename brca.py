@@ -33,7 +33,6 @@ def get_sites(df):
         assert len(positions) == len(sites)
         return list(zip(sites, positions, [peptide.upper()] * 3))
 
-
     site_gene = df[['Phosphosite', 'Gene', 'Peptide']]
 
     sites = []
@@ -44,128 +43,149 @@ def get_sites(df):
             assert site[0] == peptide[respos]
             sites.append((refseq, gene, site[0], site[1], peptide, respos))
 
-    hgnc_sitelist = []
-    for refseq, gene, res, pos, pep, respos in sites:
-        hgnc_id = hgnc_client.get_current_hgnc_id(gene)
-        if hgnc_id is None:
-            print("Couldn't find current HGNC ID for gene %s" % gene)
-            hgnc_name = gene
-            up_id = None
-        elif isinstance(hgnc_id, list):
-            print("More than one HGNC ID for gene %s" % gene)
-            hgnc_name = gene
-            up_id = None
-        else:
-            hgnc_name = hgnc_client.get_hgnc_name(hgnc_id)
-            up_id_str = hgnc_client.get_uniprot_id(hgnc_id)
-            if up_id_str is None:
-                print("No Uniprot ID for HGNC ID %s, gene %s" % (hgnc_id, gene))
-                up_id = None
-            elif ',' in up_id_str:
-                up_ids = [u.strip() for u in up_id_str.split(',')]
-                up_id = up_ids[0]
-            else:
-                up_id = up_id_str
-        hgnc_sitelist.append((hgnc_name, up_id, 'uniprot', res, pos, pep, respos))
+    return sites
 
-    refseq_sitelist = []
-    for refseq, gene, res, pos, pep, respos in sites:
-        up_ids = uniprot_client.get_ids_from_refseq(refseq, reviewed_only=True)
-        if not up_ids:
+
+def up_for_hgnc(gene):
+    hgnc_id = hgnc_client.get_current_hgnc_id(gene)
+    if hgnc_id is None:
+        print("Couldn't find current HGNC ID for gene %s" % gene)
+        hgnc_name = gene
+        up_id = None
+    elif isinstance(hgnc_id, list):
+        print("More than one HGNC ID for gene %s" % gene)
+        hgnc_name = gene
+        up_id = None
+    else:
+        hgnc_name = hgnc_client.get_hgnc_name(hgnc_id)
+        up_id_str = hgnc_client.get_uniprot_id(hgnc_id)
+        if up_id_str is None:
+            print("No Uniprot ID for HGNC ID %s, gene %s" % (hgnc_id, gene))
             up_id = None
-        elif len(up_ids) > 1:
-            print("More than one up id for rs: up %s, rs %s" %
-                    (str(up_ids), refseq))
+        elif ',' in up_id_str:
+            up_ids = [u.strip() for u in up_id_str.split(',')]
             up_id = up_ids[0]
         else:
-            up_id = up_ids[0]
-        refseq_sitelist.append((refseq, up_id, 'uniprot', res, pos, pep, respos))
-
-    return (hgnc_sitelist, refseq_sitelist)
+            up_id = up_id_str
+    return (hgnc_name, up_id)
 
 
-def valid_counts(sitelist, id_type, pm):
-    no_up_id = []
-    iso_specific = []
-    valid = []
-    mappable = []
-    for ix, (ext_id, up_id, _, res, pos, pep, respos) in \
-                                                enumerate(sitelist):
+def up_id_for_rs(refseq):
+    up_ids = uniprot_client.get_ids_from_refseq(refseq, reviewed_only=True)
+    if not up_ids:
+        up_id = None
+    elif len(up_ids) > 1:
+        print("More than one up id for rs: up %s, rs %s" %
+                (str(up_ids), refseq))
+        up_id = up_ids[0]
+    else:
+        up_id = up_ids[0]
+    return up_id
+
+
+def map_peptide(up_id, res, pos, pep, respos, suffix, pm):
+    result = {}
+    if up_id is None:
+        result['mappable_%s' % suffix] = None
+        result['valid_%s' % suffix] = None
+    else:
+        is_valid = uniprot_client.verify_location(up_id, res, pos)
+        base_id = up_id.split('-')[0]
+        ms = pm.map_peptide_to_human_ref(base_id, 'uniprot', pep,
+                                         int(respos) + 1)
+        result['valid_%s' % suffix] = is_valid
+        if ms.valid and ms.mapped_res and ms.mapped_pos:
+            result['mappable_%s' % suffix] = True
+        else:
+            result['mappable_%s' % suffix] = False
+    return result
+
+
+def iso_specific(up_id):
+    return ('-' in up_id and up_id.split('-')[1] != '1')
+
+
+def valid_counts(sitelist):
+    results = []
+    pm = ProtMapper()
+    for ix, (refseq, gene, res, pos, pep, respos) in enumerate(sitelist):
+        result = {'refseq': refseq, 'gene': gene, 'res': res, 'pos': pos,
+                  'peptide': pep, 'respos': respos}
         if ix % 10000 == 0:
             print(ix)
-        if up_id is None:
-            no_up_id.append(True)
-            iso_specific.append(False)
-            valid.append(False)
-            mappable.append(False)
-        elif up_id is not None:
-            no_up_id.append(False)
-            if '-' in up_id and up_id.split('-')[1] != '1':
-                iso_specific.append(True)
-            else:
-                iso_specific.append(False)
-            is_valid = uniprot_client.verify_location(up_id, res, pos)
-            valid.append(is_valid)
-            base_id = up_id.split('-')[0]
-            ms = pm.map_peptide_to_human_ref(base_id, 'uniprot', pep,
-                                             int(respos) + 1)
-            if not ms.valid and is_valid:
-                #import ipdb; ipdb.set_trace()
-                pass
-            if ms.valid and ms.mapped_res and ms.mapped_pos:
-                mappable.append(True)
-            else:
-                mappable.append(False)
+        up_rs = up_id_for_rs(refseq)
+        hgnc_name, up_hgnc = up_for_hgnc(gene)
+        result['up_hgnc'] = up_hgnc
+        result['up_rs'] = up_rs
+        if up_rs is None:
+            result['up_rs_iso_specific'] = None
+        else:
+            result['up_rs_iso_specific'] = iso_specific(up_rs)
+        hgnc_map_result = map_peptide(up_hgnc, res, pos, pep, respos, 'hgnc',
+                                      pm)
+        rs_map_result = map_peptide(up_rs, res, pos, pep, respos, 'rs',
+                                    pm)
+        result.update(hgnc_map_result)
+        result.update(rs_map_result)
+        results.append(result)
+
+    """
     ext_ids, up_ids, _, res, pos, pep, respos = list(zip(*sitelist))
     ext_id_col = 'refseq' if id_type == 'refseq' else 'hgnc'
     data_dict = {ext_id_col: ext_ids, 'up_id': up_ids, 'res': res, 'pos': pos,
                  'no_up_id': no_up_id, 'iso_specific': iso_specific,
                  'valid': valid, 'peptide': pep, 'respos': respos,
                  'mappable': mappable}
-    df = pd.DataFrame.from_dict(data_dict, orient='columns')
+    """
+    df = pd.DataFrame.from_dict(results, orient='columns')
     return df
 
 
 def print_valid_stats(df):
+    no_up_id_hgnc = df[df.up_hgnc.isna()]
+    has_up_id_hgnc = df[~df.up_hgnc.isna()]
+    no_up_id_rs = df[df.up_rs.isna()]
+    has_up_id_rs = df[~df.up_rs.isna()]
+    iso_spec = df[df.up_rs_iso_specific == True]
+    print()
     print("Total Sites: %d" % len(df))
-    no_up_id = len(df[df.no_up_id == True])
-    has_up = df[df.no_up_id == False]
-    print("No Uniprot ID: %d" % no_up_id)
-    print("Isoform-specific ID: %d" % len(has_up[has_up.iso_specific == True]))
-    valid = has_up[has_up.valid == True]
-    invalid = has_up[has_up.valid == False]
-    vm = valid[valid.mappable == True]
-    vnm = valid[valid.mappable == False]
-    ivm = invalid[invalid.mappable == True]
-    ivnm = invalid[invalid.mappable == False]
-    print("Valid: %d" % len(valid))
-    print("Invalid: %d (%.1f)" % (len(invalid), (100 * len(invalid) / len(df))))
-    print("Valid mappable: %d" % len(vm))
-    print("Valid not mappable: %d" % len(vnm))
-    print("Invalid mappable: %d" % len(ivm))
-    print("Invalid not mappable: %d" % len(ivnm))
+    print("No Uniprot ID from HGNC: %d" % len(no_up_id_hgnc))
+    print("No Uniprot ID from RS: %d" % len(no_up_id_rs))
+    print("Isoform-specific RS ID: %d (%.1f)" % (len(iso_spec),
+                                           100 * len(iso_spec) / len(df)))
+    print("Isoform-specific RS but mappable: %d" %
+            (len(iso_spec[iso_spec['mappable_hgnc'] == True])))
+    print("No Uniprot ID from RS but mappable: %d"
+            % (len(no_up_id_rs[no_up_id_rs.mappable_hgnc == True])))
+    for id in ('hgnc', 'rs'):
+        valid = df[df['valid_%s' % id] == True]
+        invalid = df[df['valid_%s' % id] == False]
+        vm = valid[valid['mappable_%s' % id] == True]
+        vnm = valid[valid['mappable_%s' % id] == False]
+        ivm = invalid[invalid['mappable_%s' % id] == True]
+        ivnm = invalid[invalid['mappable_%s' % id] == False]
+        print("%s Valid: %d" % (id, len(valid)))
+        print("%s Invalid: %d (%.1f)" %
+            (id, len(invalid), (100 * len(invalid) / len(df))))
+        print("%s Valid mappable: %d" % (id, len(vm)))
+        print("%s Valid not mappable: %d" % (id, len(vnm)))
+        print("%s Invalid mappable: %d" % (id, len(ivm)))
+        print("%s Invalid not mappable: %d" % (id, len(ivnm)))
+        print("%s total mappable: %d" %
+                (id, len(df[df['mappable_%s' % id] == True])))
 
-# Using HGNC IDs
-
-# Stats of sites themselves (before mapping to)
-
-# Build up list of uniprot IDs with sites
-
-# Provide dict of sites
 
 
 if __name__ == '__main__':
     df = pd.read_csv('data/CPTAC2_Breast_Prospective_Collection_BI_'
                      'Phosphoproteome.phosphosite.tmt10.tsv', delimiter='\t')
 
-    hgnc_sitelist, refseq_sitelist = get_sites(df)
-    pm = ProtMapper()
-    print("-- HGNC --")
-    hgnc_valid = valid_counts(hgnc_sitelist, 'hgnc', pm)
-    print_valid_stats(hgnc_valid)
-    print("-- RefSeq ID --")
-    rs_valid = valid_counts(refseq_sitelist, 'refseq', pm)
-    print_valid_stats(rs_valid)
+    sites = get_sites(df)
+    #import random
+    #random.shuffle(sites)
+    site_results = valid_counts(sites)
+    print_valid_stats(site_results)
+    #print_valid_stats(rs_valid)
 
     #hgnc_valid = valid_counts(hgnc_sitelist, pm)
 
