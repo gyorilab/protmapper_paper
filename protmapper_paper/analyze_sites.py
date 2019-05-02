@@ -84,14 +84,7 @@ def create_site_csv(site_dict, mapping_results, site_file, annot_file):
         csvwriter = csv.writer(f)
         csvwriter.writerows(annotations)
 
-def create_export(site_dict, mapping_results, sites_pkl, export_file,
-                  evs_file):
-    # This pickle has structure like
-    # site_stmts[('Q15438', 'T', '395')]['rhs']['signor'] ->
-    # [Phosphorylation(PRKCD(), CYTH1(), T, 395)]
-    with open(sites_pkl, 'rb') as fh:
-        site_stmts = pickle.load(fh)
-
+def create_export(site_stmts, mapping_results, export_file, evs_file):
     # Make header for main export file
     export_header = ['ID',
                      'CTRL_NS', 'CTRL_ID', 'CTRL_IS_PROTEIN',
@@ -106,6 +99,9 @@ def create_export(site_dict, mapping_results, sites_pkl, export_file,
     site_info = {}
     site_evidence = defaultdict(list)
     idx = 0
+    # site_stmts is a dict with structure like
+    # site_stmts[('Q15438', 'T', '395')]['rhs']['signor'] ->
+    # [Phosphorylation(PRKCD(), CYTH1(), T, 395)]
     for (orig_up_id, orig_res, orig_pos), stmt_dict in site_stmts.items():
         # We skip sites that are missing residue or position
         if not orig_res or not orig_pos:
@@ -377,6 +373,13 @@ if __name__ == '__main__':
         input_file = sys.argv[2]
         output_base = sys.argv[3]
         plot_annot_stats(input_file, output_base)
-    elif sys.argv[1] == 'site_samples':
-        all_sites_file = sys.argv[2]
-        output_file = sys.argv[3]
+    elif sys.argv[1] == 'export':
+        site_pkl_file = sys.argv[2]
+        mapping_results_file = sys.argv[3]
+        export_file = sys.argv[4]
+        evs_file = sys.argv[5]
+        with open(site_pkl, 'rb') as fh:
+            site_stmts = pickle.load(fh)
+        with open(mapping_results_file, 'rb') as f:
+            mapping_results = pickle.load(f)
+        create_export(site_stmts, mapping_results, export_file, evs_file)
