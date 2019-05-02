@@ -8,7 +8,6 @@ import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
 from indra.util import plot_formatting as pf
-from indra.databases import uniprot_client, hgnc_client
 
 
 def create_site_csv(site_dict, mapping_results, site_file, annot_file):
@@ -86,6 +85,12 @@ def create_site_csv(site_dict, mapping_results, site_file, annot_file):
         csvwriter.writerows(annotations)
 
 def create_export(site_stmts, mapping_results, export_file, evs_file):
+    from indra.statements import Agent
+    from indra.tools.expand_families import Expander
+    from indra.databases import uniprot_client, hgnc_client
+
+    expander = Expander()
+
     # Make header for main export file
     export_header = ['ID',
                      'CTRL_NS', 'CTRL_ID', 'CTRL_GENE_NAME', 'CTRL_IS_KINASE',
@@ -139,24 +144,37 @@ def create_export(site_stmts, mapping_results, export_file, evs_file):
                     continue
 
                 ctrl_gene_name = None
+                ctrl_is_kinase = False
                 # Get human gene name for UniProt entries
                 if ctrl_ns == 'UP':
                     # Skip non-human protein controllers
                     if not uniprot_client.is_human(ctrl_id):
                         continue
                     ctrl_gene_name = uniprot_client.get_gene_name(ctrl_id)
+                    if hgnc_client.is_kinase(ctrl_gene_name):
+                        ctrl_is_kinase = True
                 # Map human gene names to UniProt IDs
                 if ctrl_ns == 'HGNC':
+                    if hgnc_client.is_kinase(ctrl_id):
+                        ctrl_is_kinase = True
                     hgnc_id = hgnc_client.get_hgnc_id(ctrl_id)
                     up_id = hgnc_client.get_uniprot_id(hgnc_id)
                     if up_id:
                         ctrl_ns = 'UP'
                         ctrl_gene_name = ctrl_id
                         ctrl_id = up_id
+                if ctrl_ns == 'FPLX':
+                    children = expander.get_children(
+                        Agent(ctrl_id, db_refs={'FPLX': ctrl_id}))
+                    for _, hgnc_name in children:
+                        if hgnc_client.is_kinase(hgnc_name):
+                            ctrl_is_kinase = True
+                            break
 
                 # We can now make a full key that contains the controller
                 # as well as the target and final site
-                final_annot_key = tuple([ctrl_ns, ctrl_id, ctrl_gene_name] + final_site)
+                final_annot_key = tuple([ctrl_ns, ctrl_id, ctrl_gene_name,
+                                         ctrl_is_kinase] + final_site)
                 # We use this full key to store evidences and mapping details
                 if final_annot_key not in site_info:
                     site_info[final_annot_key] = idx
@@ -177,10 +195,10 @@ def create_export(site_stmts, mapping_results, export_file, evs_file):
     export_rows = [export_header]
     evidence_rows = [evidence_header]
     for key, idx in site_info.items():
-        (ctrl_ns, ctrl_id, ctrl_gene_name, target_up_id, target_gene_name,
-            target_res, target_pos) = key
+        (ctrl_ns, ctrl_id, ctrl_gene_name, ctrl_is_kinase, target_up_id,
+            target_gene_name, target_res, target_pos) = key
         export_row = [str(idx),
-                      ctrl_ns, ctrl_id, ctrl_gene_name, "",
+                      ctrl_ns, ctrl_id, ctrl_gene_name, ctrl_is_kinase,
                       target_up_id, target_gene_name, target_res, target_pos]
         export_rows.append(export_row)
         # Now get evidences
