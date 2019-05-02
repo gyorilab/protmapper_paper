@@ -84,6 +84,91 @@ def create_site_csv(site_dict, mapping_results, site_file, annot_file):
         csvwriter = csv.writer(f)
         csvwriter.writerows(annotations)
 
+def create_export(site_dict, mapping_results, sites_pkl, export_file,
+                  evs_file):
+    # This pickle has structure like
+    # site_stmts[('Q15438', 'T', '395')]['rhs']['signor'] ->
+    # [Phosphorylation(PRKCD(), CYTH1(), T, 395)]
+    with open(sites_pkl, 'rb') as fh:
+        site_stmts = pickle.load(fh)
+
+    # Make header for main export file
+    export_header = ['ID',
+                     'CTRL_NS', 'CTRL_ID', 'CTRL_IS_PROTEIN',
+                     'TARGET_UP_ID', 'TARGET_RES', 'TARGET_POS',
+                     ]
+    # Make header for evidence export file
+    evidence_header = ['ID', 'SOURCE', 'PMID', 'DBID', 'TEXT',
+                       'DESCRIPTION',
+                       'ORIG_UP_ID', 'ORIG_RES', 'ORIG_POS',
+                       'MAPPED_UP_ID', 'MAPPED_RES', 'MAPPED_POS']
+
+    site_info = {}
+    site_evidence = defaultdict(list)
+    idx = 0
+    for (orig_up_id, orig_res, orig_pos), stmt_dict in site_stmts.items():
+        # We skip sites that are missing residue or position
+        if not orig_res or not orig_pos:
+            continue
+        # Next, we construct keys for the *final* site (either valid to begin
+        # with or mapped to be valid), and if there is no valid final
+        # site, we skip the site
+        ms = mapping_results[(orig_up_id, orig_res, orig_pos)]
+        if ms.valid:
+            final_site_key = (ms.up_id, ms.orig_res, ms.orig_pos)
+        elif ms.mapped_res and ms.mapped_pos:
+            final_site_key = (ms.mapped_id, ms.mapped_res, ms.mapped_pos)
+        else:
+            continue
+
+        site_info[final_site_key] = []
+        # We now look at all the Statements where the given site
+        # appears as a substrate and get controllers and evidences
+        for source, stmts in stmt_dict['rhs'].items():
+            for stmt in stmts:
+                # If there is no controller, we skip the entry
+                if stmt.enz is None:
+                    continue
+                # We next get the grounding for the controller and
+                # if there is no grounding, we skip it
+                ctrl_ns, ctlr_id = stmt.enz.get_grounding()
+                if ctrl_ns is None or ctrl_id is None:
+                    continue
+                # We can now make a full key that contains the controller
+                # as well as the target and final site
+                final_annot_key = [ctrl_ns, ctrl_id] + list(final_site_key)
+                # We use this full key to store evidences and mapping details
+                if final_annot_key not in site_info:
+                    site_info[final_annot_key] = idx
+                    idx += 1
+                site_evidence[final_annot_key].append([stmt.evidence, ms])
+
+    # Now make the actual export tables
+    export_rows = [export_header]
+    evidence_rows = [evidence_header]
+    for key, idx in site_info.items():
+        ctrl_ns, ctrl_id, target_up_id, target_res, target_pos = key
+        export_row = [str(idx),
+                      ctrl_ns, ctrl_id, "",
+                      target_up_id, target_res, target_pos]
+        export_rows.append(export_row)
+        # Now get evidences
+        evs = site_evidence[key]
+        for evidence, ms in evs:
+            row = [str(idx), evidence.source_api, evidence.pmid,
+                   evidence.source_id, evidence.text,
+                   ms.description,
+                   ms.up_id, ms.orig_res, ms.orig_pos,
+                   ms.mapped_id, ms.mapped_res, ms.mapped_pos]
+            evidence_rows.append(row)
+
+    with open(export_file, 'wt') as fh:
+        csvwriter = csv.writer(fh)
+        csvwriter.writerows(export_rows)
+    with open(evs_file, 'wt') as fh:
+        csvwriter = csv.writer(fh)
+        csvwriter.writerows(evidence_rows)
+
 
 def print_stats(site_df):
     """Print statistics about site validity."""
