@@ -164,9 +164,16 @@ def create_export(site_stmts, mapping_results, export_file, evs_file):
                 # Note: we do get multiple pieces of evidence, e.g.,
                 # from biopax
                 for ev in stmt.evidence:
-                    site_evidence[final_annot_key].append([ev, ms])
+                    site_evidence[final_annot_key].append([ev, source, ms])
 
     # Now make the actual export tables
+    def sanitize_ev_text(txt):
+        if txt is None:
+            return ''
+        else:
+            txt = txt.replace('\n', ' ')
+            return txt
+
     export_rows = [export_header]
     evidence_rows = [evidence_header]
     for key, idx in site_info.items():
@@ -178,9 +185,13 @@ def create_export(site_stmts, mapping_results, export_file, evs_file):
         export_rows.append(export_row)
         # Now get evidences
         evs = site_evidence[key]
-        for evidence, ms in evs:
-            row = [str(idx), evidence.source_api, evidence.pmid,
-                   evidence.source_id, evidence.text,
+        for evidence, source, ms in evs:
+            if source == 'bel':
+                source_id = evidence.source_id[:16]
+            else:
+                source_id = evidence.source_id
+            row = [str(idx), source, evidence.pmid,
+                   source_id, sanitize_ev_text(evidence.text),
                    ms.description,
                    ms.up_id, ms.orig_res, ms.orig_pos,
                    ms.mapped_id, ms.mapped_res, ms.mapped_pos]
