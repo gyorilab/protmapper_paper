@@ -7,7 +7,7 @@ from indra.databases import hgnc_client, uniprot_client
 
 
 
-def get_sites(df):
+def get_sites(datafile):
     def get_max_peptide(seq):
         peptides = seq.split(';')
         max_pep_ix = np.argmax([len(p) for p in peptides])
@@ -32,6 +32,8 @@ def get_sites(df):
                 positions.append(ix)
         assert len(positions) == len(sites)
         return list(zip(sites, positions, [peptide.upper()] * 3))
+
+    df = pd.read_csv(datafile, delimiter='\t')
 
     site_gene = df[['Phosphosite', 'Gene', 'Peptide']]
 
@@ -177,10 +179,11 @@ def print_valid_stats(df):
 
 
 if __name__ == '__main__':
-    df = pd.read_csv('data/CPTAC2_Breast_Prospective_Collection_BI_'
-                     'Phosphoproteome.phosphosite.tmt10.tsv', delimiter='\t')
+    #datafile = sys.argv[1]
+    datafile = ('data/CPTAC2_Breast_Prospective_Collection_BI_'
+                'Phosphoproteome.phosphosite.tmt10.tsv')
 
-    sites = get_sites(df)
+    sites = get_sites(datafile)
     #import random
     #random.shuffle(sites)
     site_results = valid_counts(sites)
