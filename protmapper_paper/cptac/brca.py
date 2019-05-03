@@ -51,18 +51,18 @@ def get_sites(datafile):
 def up_for_hgnc(gene):
     hgnc_id = hgnc_client.get_current_hgnc_id(gene)
     if hgnc_id is None:
-        print("Couldn't find current HGNC ID for gene %s" % gene)
+        #print("Couldn't find current HGNC ID for gene %s" % gene)
         hgnc_name = gene
         up_id = None
     elif isinstance(hgnc_id, list):
-        print("More than one HGNC ID for gene %s" % gene)
+        #print("More than one HGNC ID for gene %s" % gene)
         hgnc_name = gene
         up_id = None
     else:
         hgnc_name = hgnc_client.get_hgnc_name(hgnc_id)
         up_id_str = hgnc_client.get_uniprot_id(hgnc_id)
         if up_id_str is None:
-            print("No Uniprot ID for HGNC ID %s, gene %s" % (hgnc_id, gene))
+            #print("No Uniprot ID for HGNC ID %s, gene %s" % (hgnc_id, gene))
             up_id = None
         elif ',' in up_id_str:
             up_ids = [u.strip() for u in up_id_str.split(',')]
@@ -77,8 +77,8 @@ def up_id_for_rs(refseq):
     if not up_ids:
         up_id = None
     elif len(up_ids) > 1:
-        print("More than one up id for rs: up %s, rs %s" %
-                (str(up_ids), refseq))
+        #print("More than one up id for rs: up %s, rs %s" %
+        #        (str(up_ids), refseq))
         up_id = up_ids[0]
     else:
         up_id = up_ids[0]
