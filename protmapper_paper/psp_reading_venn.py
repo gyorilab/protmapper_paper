@@ -1,9 +1,13 @@
 import pandas
+import matplotlib
 from matplotlib import pyplot as plt
 from matplotlib_venn import venn2, venn3
 from indra.statements import Agent
 from indra.tools.expand_families import Expander
 from indra.databases import hgnc_client, uniprot_client
+
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
 
 expander = Expander()
 
