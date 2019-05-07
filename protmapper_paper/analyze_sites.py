@@ -84,6 +84,7 @@ def create_site_csv(site_dict, mapping_results, site_file, annot_file):
         csvwriter = csv.writer(f)
         csvwriter.writerows(annotations)
 
+
 def create_export(site_stmts, mapping_results, export_file, evs_file):
     from indra.statements import Agent
     from indra.tools.expand_families import Expander
@@ -95,7 +96,7 @@ def create_export(site_stmts, mapping_results, export_file, evs_file):
     export_header = ['ID',
                      'CTRL_NS', 'CTRL_ID', 'CTRL_GENE_NAME', 'CTRL_IS_KINASE',
                      'TARGET_UP_ID', 'TARGET_GENE_NAME', 'TARGET_RES',
-                     'TARGET_POS',
+                     'TARGET_POS','SOURCES'
                      ]
     # Make header for evidence export file
     evidence_header = ['ID', 'SOURCE', 'PMID', 'DBID', 'TEXT',
@@ -200,9 +201,11 @@ def create_export(site_stmts, mapping_results, export_file, evs_file):
         export_row = [str(idx),
                       ctrl_ns, ctrl_id, ctrl_gene_name, ctrl_is_kinase,
                       target_up_id, target_gene_name, target_res, target_pos]
-        export_rows.append(export_row)
         # Now get evidences
         evs = site_evidence[key]
+        sources = sorted(list({s for e, s, m in evs}))
+        export_row.append(','.join(sources))
+        export_rows.append(export_row)
         for evidence, source, ms in evs:
             if source == 'bel':
                 source_id = evidence.source_id[:16]
