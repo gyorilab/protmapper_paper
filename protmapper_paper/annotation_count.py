@@ -3,7 +3,7 @@ import itertools
 import numpy as np
 import pandas as pd
 from protmapper import ProtMapper
-from protmapper_paper.cptac.brca import get_sites, up_for_hgnc
+from protmapper_paper.mapping_stats import get_sites, up_for_hgnc
 
 
 pd.set_option('display.max_colwidth', 200)
@@ -96,8 +96,8 @@ def count_annotations(annot, data, sm_opt, dm_opt, source_opt):
 if __name__ == '__main__':
     annot_file = sys.argv[1]
     datafile = sys.argv[2]
-    #datafile = ('../../data/CPTAC2_Breast_Prospective_Collection_BI_'
-    #            'Phosphoproteome.phosphosite.tmt10.tsv')
+    output_file = sys.argv[3]
+
     # Load the data
     data_sites = get_sites(datafile)
     # Load the annotations
@@ -120,4 +120,5 @@ if __name__ == '__main__':
     result_df = pd.DataFrame.from_records(results, columns=
                     ['SITES_MAPPED', 'DATA_MAPPED', 'SOURCES', 'NUM_SITES',
                      'MEAN_CTRL_COUNT', 'MEDIAN_CTRL_COUNT'])
+    result_df.to_csv(output_file)
     print(results)

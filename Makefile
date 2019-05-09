@@ -10,7 +10,9 @@ fig1: $(PLOTS)/site_stats_by_site.pdf \
 
 cptac: \
     $(OUTPUT)/brca_peptide_mapping_results.csv \
-    $(OUTPUT)/ovca_peptide_mapping_results.csv
+    $(OUTPUT)/ovca_peptide_mapping_results.csv \
+    $(OUTPUT)/brca_annotation_counts.csv \
+    $(OUTPUT)/ovca_annotation_counts.csv
 
 mouse: $(OUTPUT)/psp_relations_by_site.pkl
 #$(OUTPUT)/mouse_kin_sub_count.txt
@@ -177,8 +179,17 @@ $(OUTPUT)/brca_peptide_mapping_results.csv: \
 	python -m protmapper_paper.mapping_stats $< $@
 
 $(OUTPUT)/ovca_peptide_mapping_results.csv: \
-    $(DATA)/TCGA_Ovarian_PNNL_Phosphoproteome.phosphosite.itraq.tsv
 	python -m protmapper_paper.mapping_stats $< $@
+
+$(OUTPUT)/brca_annotation_counts.csv: \
+    $(OUTPUT)/annotations.csv \
+    $(DATA)/CPTAC2_Breast_Prospective_Collection_BI_Phosphoproteome.phosphosite.tmt10.tsv
+	python -m protmapper_paper.annotation_count $< $(word 2,$^) $@
+
+$(OUTPUT)/ovca_annotation_counts.csv: \
+    $(OUTPUT)/annotations.csv \
+    $(DATA)/TCGA_Ovarian_PNNL_Phosphoproteome.phosphosite.itraq.tsv
+	python -m protmapper_paper.annotation_count $< $(word 2,$^) $@
 
 
 # MOUSE data ---------------------------------------------------------
