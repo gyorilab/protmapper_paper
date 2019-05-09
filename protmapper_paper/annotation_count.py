@@ -17,7 +17,7 @@ def get_analysis_conditions():
     # sources = [psp_only, psp_dbs, all]
     sm_options = [False, True]
     dm_options = [False, True]
-    source_options = ['psp_only', 'psp_dbs', 'all']
+    source_options = ['psp_only', 'psp_dbs', 'nlp_only', 'all']
     return list(itertools.product(sm_options, dm_options, source_options))
 
 
@@ -30,6 +30,10 @@ def build_annot(ann_df, sm_opt, source_opt):
         ann_source = ann_df[(ann_df.SOURCE != 'rlimsp') &
                             (ann_df.SOURCE != 'reach') &
                             (ann_df.SOURCE != 'signor')]
+    elif source_opt == 'nlp_only':
+        ann_source = ann_df[(ann_df.SOURCE == 'rlimsp') |
+                            (ann_df.SOURCE == 'reach') |
+                            (ann_df.SOURCE == 'signor')]
     elif source_opt == 'all':
         ann_source = ann_df
     else:
