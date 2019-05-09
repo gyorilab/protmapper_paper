@@ -6,7 +6,6 @@ from protmapper import uniprot_client
 from indra.databases import hgnc_client, uniprot_client
 
 
-
 def get_sites(datafile):
     def get_max_peptide(seq):
         peptides = seq.split(';')
@@ -131,14 +130,6 @@ def valid_counts(sitelist):
         result.update(rs_map_result)
         results.append(result)
 
-    """
-    ext_ids, up_ids, _, res, pos, pep, respos = list(zip(*sitelist))
-    ext_id_col = 'refseq' if id_type == 'refseq' else 'hgnc'
-    data_dict = {ext_id_col: ext_ids, 'up_id': up_ids, 'res': res, 'pos': pos,
-                 'no_up_id': no_up_id, 'iso_specific': iso_specific,
-                 'valid': valid, 'peptide': pep, 'respos': respos,
-                 'mappable': mappable}
-    """
     df = pd.DataFrame.from_dict(results, orient='columns')
     return df
 
@@ -177,47 +168,20 @@ def print_valid_stats(df):
                 (id, len(df[df['mappable_%s' % id] == True])))
 
 
-
 if __name__ == '__main__':
-    #datafile = sys.argv[1]
-    datafile = ('data/CPTAC2_Breast_Prospective_Collection_BI_'
-                'Phosphoproteome.phosphosite.tmt10.tsv')
+    # Args
+    datafile = sys.argv[1]
+    output_file = sys.argv[2]
 
+    # Process the dataset
     sites = get_sites(datafile)
-    #import random
-    #random.shuffle(sites)
+
+    # Get counts of valid and mappable sites
     site_results = valid_counts(sites)
+
+    # Save dataframe as CSV
+    site_results.to_csv(output_file)
+
+    # Print results
     print_valid_stats(site_results)
-    #print_valid_stats(rs_valid)
 
-    #hgnc_valid = valid_counts(hgnc_sitelist, pm)
-
-"""
-sites = df[~df.Site.isna()].Site
-site_parse = []
-for site_text in sites:
-    gene, site_raw = site_text.rsplit('-', maxsplit=1)
-    hgnc_id = hgnc_client.get_hgnc_id(gene)
-    up_id_str = hgnc_client.get_uniprot_id(hgnc_id)
-    if up_id_str is None:
-        print("No Uniprot ID for %s" % gene)
-        continue
-    if ',' in up_id_str:
-        up_ids = [u.strip() for u in up_id_str.split(',')]
-        up_id = up_ids[0]
-    else:
-        up_id = up_id_str
-
-    while site_raw:
-        m = re.match('([STY]\d+[sty])', site_raw)
-        if m:
-            one_site = m.groups()[0]
-            res = one_site[0]
-            pos = one_site[1:-1]
-            site_raw = site_raw[len(one_site):]
-            site_parse.append((up_id, 'uniprot', res, pos))
-
-pm = ProtMapper()
-
-mapped = pm.map_sitelist_to_human_ref(site_parse)
-"""
