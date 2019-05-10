@@ -3,10 +3,10 @@ PLOTS := plots
 DATA := data
 DEPLOY := ../protmapper_manuscript/figures/figure_panels
 
-all: fig1 cptac mouse
+all: figs cptac export
 
-fig1: $(PLOTS)/site_stats_by_site.pdf \
-      $(PLOTS)/psp_reader_site_overlap.pdf
+figs: $(PLOTS)/site_stats_by_site.pdf \
+      $(PLOTS)/psp_reader_sites_overlap_distinct.pdf
 
 cptac: \
     $(OUTPUT)/brca_peptide_mapping_results.csv \
@@ -14,8 +14,11 @@ cptac: \
     $(OUTPUT)/brca_annotation_counts.csv \
     $(OUTPUT)/ovca_annotation_counts.csv
 
+export: $(OUTPUT)/export.csv
+
 mouse: $(OUTPUT)/psp_relations_by_site.pkl
 #$(OUTPUT)/mouse_kin_sub_count.txt
+
 
 # MAKEFILE GRAPH
 graph: makegraph.pdf
@@ -31,7 +34,6 @@ deploy:
 
 clean:
 	cd $(OUTPUT); rm -rf *
-
 
 agent_mods: $(OUTPUT)/indra_sparser_agent_mod.sites.pkl \
             $(OUTPUT)/indra_reach_agent_mod.sites.pkl \
@@ -144,6 +146,8 @@ $(OUTPUT)/site_info.csv: \
 	python -m protmapper_paper.analyze_sites create_site_csv \
         $< $(word 2,$^) $@ $(OUTPUT)/annotations.csv
 
+$(OUTPUT)/annotations.csv: $(OUTPUT)/site_info.csv
+
 # Export of all annotated sites with evidence
 $(OUTPUT)/export.csv: \
     $(OUTPUT)/all_sites.pkl \
@@ -158,8 +162,8 @@ $(PLOTS)/site_stats_by_site.pdf: $(OUTPUT)/site_info.csv
 
 $(PLOTS)/psp_reader_sites_overlap_distinct.pdf: \
     $(OUTPUT)/site_info.csv \
-    $(OUTPUT)/annotations/csv
-	python psp_reading_venn.py
+    $(OUTPUT)/annotations.csv
+	python -m protmapper_paper.psp_reading_venn
 
 # Plots on correctness/mappability
 $(PLOTS)/annotations_valid_counts.pdf: $(OUTPUT)/annotations.csv
@@ -173,7 +177,7 @@ $(OUTPUT)/site_sample.csv: $(OUTPUT)/site_info.csv
 	python -m protmapper_paper.analyze_sites site_samples $< $@
 
 
-# BRCA and OVCA peptide mapping ----------------------------------------------------
+# BRCA and OVCA peptide mapping ---------------------------------------------
 $(OUTPUT)/brca_peptide_mapping_results.csv: \
     $(DATA)/CPTAC2_Breast_Prospective_Collection_BI_Phosphoproteome.phosphosite.tmt10.tsv
 	python -m protmapper_paper.mapping_stats $< $@
