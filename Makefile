@@ -3,13 +3,16 @@ PLOTS := plots
 DATA := data
 DEPLOY := ../protmapper_manuscript/figures/figure_panels
 
-all: fig1 brca mouse
+all: fig1 cptac mouse
 
 fig1: $(PLOTS)/site_stats_by_site.pdf \
       $(PLOTS)/psp_reader_site_overlap.pdf
 
-
-brca: $(OUTPUT)/brca_site_stats.txt
+cptac: \
+    $(OUTPUT)/brca_peptide_mapping_results.csv \
+    $(OUTPUT)/ovca_peptide_mapping_results.csv \
+    $(OUTPUT)/brca_annotation_counts.csv \
+    $(OUTPUT)/ovca_annotation_counts.csv
 
 mouse: $(OUTPUT)/psp_relations_by_site.pkl
 #$(OUTPUT)/mouse_kin_sub_count.txt
@@ -170,17 +173,24 @@ $(OUTPUT)/site_sample.csv: $(OUTPUT)/site_info.csv
 	python -m protmapper_paper.analyze_sites site_samples $< $@
 
 
-# BRCA data ----------------------------------------------------------
-$(OUTPUT)/brca_up_mappings.txt: \
-    $(DATA)/breast_phosphosites.txt \
-    $(DATA)/HUMAN_9606_idmapping.dat
-	python -m protmapper_paper.brca_data map_uniprot $< $(word 2,$^) $@
+# BRCA and OVCA peptide mapping ----------------------------------------------------
+$(OUTPUT)/brca_peptide_mapping_results.csv: \
+    $(DATA)/CPTAC2_Breast_Prospective_Collection_BI_Phosphoproteome.phosphosite.tmt10.tsv
+	python -m protmapper_paper.mapping_stats $< $@
 
+$(OUTPUT)/ovca_peptide_mapping_results.csv: \
+    $(DATA)/TCGA_Ovarian_PNNL_Phosphoproteome.phosphosite.itraq.tsv
+	python -m protmapper_paper.mapping_stats $< $@
 
-$(OUTPUT)/brca_site_stats.txt: \
-    $(OUTPUT)/all_sites.pkl \
-    $(OUTPUT)/brca_up_mappings.txt
-	python -m protmapper_paper.brca_data site_stats $< $(word 2,$^) $@
+$(OUTPUT)/brca_annotation_counts.csv: \
+    $(OUTPUT)/annotations.csv \
+    $(DATA)/CPTAC2_Breast_Prospective_Collection_BI_Phosphoproteome.phosphosite.tmt10.tsv
+	python -m protmapper_paper.annotation_count $< $(word 2,$^) $@
+
+$(OUTPUT)/ovca_annotation_counts.csv: \
+    $(OUTPUT)/annotations.csv \
+    $(DATA)/TCGA_Ovarian_PNNL_Phosphoproteome.phosphosite.itraq.tsv
+	python -m protmapper_paper.annotation_count $< $(word 2,$^) $@
 
 
 # MOUSE data ---------------------------------------------------------

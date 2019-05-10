@@ -362,6 +362,7 @@ def plot_annot_stats(csv_file, output_base):
     fig_valid.savefig('%s_valid_counts.pdf' % output_base)
     fig_mapped.savefig('%s_mapped_counts.pdf' % output_base)
 
+    results = []
     # Now generate the plot of invalid site proportions
     fig_valid = plt.figure(figsize=(1.8, 2.2), dpi=150)
     fig_mapped = plt.figure(figsize=(1.8, 2.2), dpi=150)
@@ -377,6 +378,13 @@ def plot_annot_stats(csv_file, output_base):
         pct_unmapped = 100 * len(unmapped) / len(source_anns)
         pct_valid = 100 * len(valid) / len(source_anns)
         pct_invalid = 100 * len(invalid) / len(source_anns)
+        results.append([
+            source, len(source_anns), len(valid),
+            round(100 * len(valid) / len(source_anns), 1),
+            len(invalid),
+            round(100 * len(invalid) / len(source_anns), 1),
+            len(mapped),
+            round(100 * len(mapped) / len(invalid), 1)])
         #print("%s, %d, %d, %d, %d" % (source, len(valid), len(invalid),
         #                              len(unmapped), len(mapped)))
         fig_valid.gca().bar(ix, height=pct_valid, color='blue')
@@ -387,7 +395,6 @@ def plot_annot_stats(csv_file, output_base):
                              bottom=pct_valid, color='green')
         fig_mapped.gca().bar(ix, height=pct_unmapped,
                              bottom=(pct_valid + pct_mapped), color='red')
-
     plt.xticks(range(len(sources)), sources, rotation="vertical")
     plt.ylabel('Pct. Unique Site Annotations')
     plt.subplots_adjust(left=0.31, bottom=0.25, top=0.90)
@@ -396,6 +403,11 @@ def plot_annot_stats(csv_file, output_base):
         pf.format_axis(ax)
     fig_valid.savefig('%s_valid_pcts.pdf' % output_base)
     fig_mapped.savefig('%s_mapped_pcts.pdf' % output_base)
+    result_df = pd.DataFrame.from_records(results, columns=
+            ['SOURCE', 'TOTAL', 'VALID', 'VALID_PCT', 'INVALID', 'INVALID_PCT',
+             'MAPPED', 'MAPPED_PCT_INVALID'])
+    result_df.to_csv('%s_result_df.csv' % output_base)
+    return result_df
 
 
 def get_sites_by_source(sites_dict, source, side):
@@ -432,7 +444,7 @@ if __name__ == '__main__':
     elif sys.argv[1] == 'plot_annot_stats':
         input_file = sys.argv[2]
         output_base = sys.argv[3]
-        plot_annot_stats(input_file, output_base)
+        result_df = plot_annot_stats(input_file, output_base)
     elif sys.argv[1] == 'export':
         site_pkl_file = sys.argv[2]
         mapping_results_file = sys.argv[3]
