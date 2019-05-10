@@ -141,6 +141,8 @@ if __name__ == '__main__':
 
     dfa = filter_all_annots(df)
     psp_annots = get_source_annots(dfa, ['psp'])
+    db_annots = get_source_annots(dfa, ['psp', 'hprd', 'signor', 'pid',
+                                        'reactome', 'bel'])
     reach_annots = get_source_annots(dfa, ['reach'])
     sparser_annots = get_source_annots(dfa, ['sparser'])
     rlimsp_annots = get_source_annots(dfa, ['rlimsp'])
@@ -161,6 +163,7 @@ if __name__ == '__main__':
 
     # Kinases only
     psp_annotsk = filter_kinase_annots(psp_annots)
+    db_annotsk = filter_kinase_annots(db_annots)
     reach_annotsk = filter_kinase_annots(reach_annots)
     sparser_annotsk = filter_kinase_annots(sparser_annots)
     rlimsp_annotsk = filter_kinase_annots(rlimsp_annots)
@@ -181,6 +184,7 @@ if __name__ == '__main__':
 
     # Non-FamPlex Kinases only
     psp_annotskn = filter_kinase_annots(psp_annots, False)
+    db_annotskn = filter_kinase_annots(db_annots, False)
     reach_annotskn = filter_kinase_annots(reach_annots, False)
     sparser_annotskn = filter_kinase_annots(sparser_annots, False)
     rlimsp_annotskn = filter_kinase_annots(rlimsp_annots, False)
@@ -191,6 +195,12 @@ if __name__ == '__main__':
     venn2(get_venn_dict_unweighted([psp_annotskn, reader_annotskn]),
           set_labels=('PhosphoSitePlus', 'REACH/Sparser/RLIMS-P'))
     plt.savefig('plots/psp_reader_annotation_overlap_distinct_kinase_nofamplex.pdf')
+
+    # Annotations: DBs vs. Readers
+    plt.figure()
+    venn2(get_venn_dict_unweighted([db_annotskn, reader_annotskn]),
+          set_labels=('Databases', 'REACH/Sparser/RLIMS-P'))
+    plt.savefig('plots/db_reader_annotation_overlap_distinct_kinase_nofamplex.pdf')
 
     # Annotations: REACH vs. Sparser vs. RLIMS-P
     plt.figure()
