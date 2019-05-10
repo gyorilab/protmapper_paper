@@ -179,6 +179,7 @@ $(OUTPUT)/brca_peptide_mapping_results.csv: \
 	python -m protmapper_paper.mapping_stats $< $@
 
 $(OUTPUT)/ovca_peptide_mapping_results.csv: \
+    $(DATA)/TCGA_Ovarian_PNNL_Phosphoproteome.phosphosite.itraq.tsv
 	python -m protmapper_paper.mapping_stats $< $@
 
 $(OUTPUT)/brca_annotation_counts.csv: \
