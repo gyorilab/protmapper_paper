@@ -1,6 +1,7 @@
 pandas
 seaborn
 matplotlib
+matplotlib_venn
 numpy
 pybel
 git+https://github.com/indralab/protmapper.git
