@@ -1,3 +1,4 @@
+"""Script to generate mapping statistics for CPTAC data sets."""
 import re
 import sys
 import numpy as np
@@ -8,6 +9,7 @@ from indra.databases import hgnc_client, uniprot_client
 
 
 def get_sites(datafile):
+    """Return a list of sites for a given data set; each site is a tuple."""
     def get_max_peptide(seq):
         peptides = seq.split(';')
         max_pep_ix = np.argmax([len(p) for p in peptides])
@@ -49,6 +51,8 @@ def get_sites(datafile):
 
 
 def up_for_hgnc(gene):
+    """Return HGNC symbol and UniProt ID for a potentially outdated gene
+    name."""
     hgnc_id = hgnc_client.get_current_hgnc_id(gene)
     if hgnc_id is None:
         #print("Couldn't find current HGNC ID for gene %s" % gene)
@@ -69,10 +73,11 @@ def up_for_hgnc(gene):
             up_id = up_ids[0]
         else:
             up_id = up_id_str
-    return (hgnc_name, up_id)
+    return hgnc_name, up_id
 
 
 def up_id_for_rs(refseq):
+    """Return a UniProt ID for a RefSeq ID."""
     up_ids = uniprot_client.get_ids_from_refseq(refseq, reviewed_only=True)
     if not up_ids:
         up_id = None
@@ -86,6 +91,7 @@ def up_id_for_rs(refseq):
 
 
 def map_peptide(up_id, res, pos, pep, respos, suffix, pm):
+    """Map a given peptide to reference and return dict of mapping status."""
     result = {}
     if up_id is None:
         result['mappable_%s' % suffix] = None
@@ -104,6 +110,7 @@ def map_peptide(up_id, res, pos, pep, respos, suffix, pm):
 
 
 def iso_specific(up_id):
+    """Return True if the given UniProt ID corresponds to the -1 isoform."""
     return ('-' in up_id and up_id.split('-')[1] != '1')
 
 
