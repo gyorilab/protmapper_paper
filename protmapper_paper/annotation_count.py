@@ -29,11 +29,11 @@ def build_annot(ann_df, sm_opt, source_opt):
     elif source_opt == 'psp_dbs':
         ann_source = ann_df[(ann_df.SOURCE != 'rlimsp') &
                             (ann_df.SOURCE != 'reach') &
-                            (ann_df.SOURCE != 'signor')]
+                            (ann_df.SOURCE != 'sparser')]
     elif source_opt == 'nlp_only':
         ann_source = ann_df[(ann_df.SOURCE == 'rlimsp') |
                             (ann_df.SOURCE == 'reach') |
-                            (ann_df.SOURCE == 'signor')]
+                            (ann_df.SOURCE == 'sparser')]
     elif source_opt == 'all':
         ann_source = ann_df
     else:
@@ -93,6 +93,21 @@ def count_annotations(annot, data, sm_opt, dm_opt, source_opt):
             'median_ctrls': median_ctrls}
 
 
+def get_annot_diff(anns, datas, ix1, ix2):
+    res1 = {}
+    res2 = {}
+    for refseq, gene, res, pos, pep, respos in datas[ix1]:
+        site_key = (gene, res, pos)
+        if site_key in anns[ix1]:
+            res1[site_key] = anns[ix1][site_key]
+    for refseq, gene, res, pos, pep, respos in datas[ix2]:
+        site_key = (gene, res, pos)
+        if site_key in anns[ix2]:
+            res2[site_key] = anns[ix2][site_key]
+    dd = list(set(res2.keys()) - set(res1.keys()))
+    return dd
+
+
 if __name__ == '__main__':
     annot_file = sys.argv[1]
     datafile = sys.argv[2]
@@ -109,10 +124,14 @@ if __name__ == '__main__':
     # Get the different types of analysis conditions
     conditions = get_analysis_conditions()
     results = []
+    datas = []
+    anns = []
     for sm_opt, dm_opt, source_opt in conditions:
         print(sm_opt, dm_opt, source_opt)
         ann = build_annot(ann_df, sm_opt, source_opt)
+        anns.append(ann)
         data = build_data(data_sites, dm_opt)
+        datas.append(data)
         count = count_annotations(ann, data, sm_opt, dm_opt, source_opt)
         result = (sm_opt, dm_opt, source_opt, count['num_sites'],
                   count['mean_ctrls'], count['median_ctrls'])
@@ -121,4 +140,5 @@ if __name__ == '__main__':
                     ['SITES_MAPPED', 'DATA_MAPPED', 'SOURCES', 'NUM_SITES',
                      'MEAN_CTRL_COUNT', 'MEDIAN_CTRL_COUNT'])
     result_df.to_csv(output_file)
+    dd = get_annot_diff(anns, datas, 4, 15)
     print(results)
