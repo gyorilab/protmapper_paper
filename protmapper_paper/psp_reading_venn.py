@@ -10,7 +10,7 @@ matplotlib.rcParams['pdf.fonttype'] = 42
 matplotlib.rcParams['ps.fonttype'] = 42
 matplotlib.rcParams['font.sans-serif'] = "Arial"
 matplotlib.rcParams['font.family'] = "sans-serif"
-matplotlib.rcParams['font.size'] = 14
+matplotlib.rcParams['font.size'] = 18
 
 expander = Expander()
 
@@ -86,7 +86,8 @@ def filter_kinase_annots(annot_sites, include_fplx=True):
         elif include_fplx and ctrl_ns == 'FPLX':
             children = expander.get_children(Agent(ctrl_id,
                                                    db_refs={'FPLX': ctrl_id}))
-            for _, hgnc_name in children:
+            for _, hgnc_id in children:
+                hgnc_name = hgnc_client.get_hgnc_name(hgnc_id)
                 if hgnc_client.is_kinase(hgnc_name):
                     kinase_sites[k] = v
                     break
@@ -115,6 +116,7 @@ def print_reading_contribs(reader_sites, psp_sites):
             print('Could not get gene name for %s' % up_id)
         print('%s -> %s-%s%s' % (ctrl_id, target_name, residue, int(pos)))
 
+
 if __name__ == '__main__':
     # SITES
     df = pandas.read_csv('output/site_info.csv')
@@ -132,7 +134,7 @@ if __name__ == '__main__':
     plt.ion()
     # Sites: PSP vs. DB vs. Readers
     plt.figure()
-    venn2(get_venn_dict_unweighted([psp_sites, db_no_psp_sites, reader_sites]),
+    venn3(get_venn_dict_unweighted([psp_sites, db_no_psp_sites, reader_sites]),
           set_labels=('PhosphoSitePlus', 'HPRD/SIGNOR/PID/\nReactome/BEL',
                       'REACH/Sparser/\nRLIMS-P'),
           set_colors=('r', 'b', 'g'))
@@ -161,7 +163,8 @@ if __name__ == '__main__':
 
     # Annotations: PSP vs. DB vs. Readers
     plt.figure()
-    venn2(get_venn_dict_unweighted([psp_annots, db_no_psp_annots, reader_annots]),
+    venn3(get_venn_dict_unweighted([psp_annots, db_no_psp_annots,
+                                    reader_annots]),
           set_labels=('PhosphoSitePlus', 'HPRD/SIGNOR/PID/\nReactome/BEL',
                       'REACH/Sparser/\nRLIMS-P'),
           set_colors=('r', 'b', 'g'))
@@ -185,7 +188,8 @@ if __name__ == '__main__':
 
     # Annotations: PSP vs. DB vs. Readers
     plt.figure()
-    venn2(get_venn_dict_unweighted([psp_annotsk, db_no_psp_annotsk, reader_annotsk]),
+    venn3(get_venn_dict_unweighted([psp_annotsk, db_no_psp_annotsk,
+                                    reader_annotsk]),
           set_labels=('PhosphoSitePlus', 'HPRD/SIGNOR/PID/\nReactome/BEL',
                       'REACH/Sparser/\nRLIMS-P'),
           set_colors=('r', 'b', 'g'))
@@ -201,6 +205,7 @@ if __name__ == '__main__':
     # Non-FamPlex Kinases only
     psp_annotskn = filter_kinase_annots(psp_annots, False)
     db_annotskn = filter_kinase_annots(db_annots, False)
+    db_no_psp_annotskn = filter_kinase_annots(db_no_psp_annots, False)
     reach_annotskn = filter_kinase_annots(reach_annots, False)
     sparser_annotskn = filter_kinase_annots(sparser_annots, False)
     rlimsp_annotskn = filter_kinase_annots(rlimsp_annots, False)
@@ -211,8 +216,10 @@ if __name__ == '__main__':
     venn3(get_venn_dict_unweighted([psp_annotskn, 
                                     db_no_psp_annotskn, reader_annotskn]),
           set_labels=('PhosphoSitePlus', 'HPRD/SIGNOR/PID/\nReactome/BEL',
-                      'REACH/Sparser/\nRLIMS-P',))
-    plt.savefig('plots/psp_db_reader_overlap_distinct_kinase_nofamplex.pdf')
+                      'REACH/Sparser/\nRLIMS-P'),
+          set_colors=('r', 'b', 'g'))
+    plt.savefig(
+        'plots/psp_db_reader_annotation_overlap_distinct_kinase_nofamplex.pdf')
 
     # Annotations: REACH vs. Sparser vs. RLIMS-P
     plt.figure()
