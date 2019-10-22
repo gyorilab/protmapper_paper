@@ -5,7 +5,6 @@ from collections import Counter, defaultdict
 import matplotlib
 matplotlib.use('agg')
 import pandas as pd
-import seaborn as sns
 from matplotlib import pyplot as plt
 from indra.util import plot_formatting as pf
 
@@ -141,7 +140,7 @@ def create_export(site_stmts, mapping_results, export_file, evs_file):
                 # We next get the grounding for the controller and
                 # if there is no grounding, we skip it
                 ctrl_ns, ctrl_id = stmt.enz.get_grounding()
-                if ctrl_ns is None or ctrl_id is None:
+                if ctrl_ns not in ['UP', 'HGNC', 'FPLX'] or ctrl_id is None:
                     continue
 
                 ctrl_gene_name = None
@@ -156,19 +155,20 @@ def create_export(site_stmts, mapping_results, export_file, evs_file):
                         ctrl_is_kinase = True
                 # Map human gene names to UniProt IDs
                 if ctrl_ns == 'HGNC':
-                    if hgnc_client.is_kinase(ctrl_id):
+                    gene_name = hgnc_client.get_hgnc_name(ctrl_id)
+                    if hgnc_client.is_kinase(gene_name):
                         ctrl_is_kinase = True
-                    hgnc_id = hgnc_client.get_hgnc_id(ctrl_id)
-                    up_id = hgnc_client.get_uniprot_id(hgnc_id)
+                    up_id = hgnc_client.get_uniprot_id(ctrl_id)
                     if up_id:
                         ctrl_ns = 'UP'
-                        ctrl_gene_name = ctrl_id
+                        ctrl_gene_name = gene_name
                         ctrl_id = up_id
                 if ctrl_ns == 'FPLX':
                     children = expander.get_children(
                         Agent(ctrl_id, db_refs={'FPLX': ctrl_id}))
-                    for _, hgnc_name in children:
-                        if hgnc_client.is_kinase(hgnc_name):
+                    for _, hgnc_id in children:
+                        gene_name = hgnc_client.get_hgnc_name(hgnc_id)
+                        if hgnc_client.is_kinase(gene_name):
                             ctrl_is_kinase = True
                             break
 
@@ -422,6 +422,7 @@ def get_sites_by_source(sites_dict, source, side):
 def site_sample(all_sites_file, output_file):
     all_sites = pd.read_csv(all_sites_file, dtype={'ORIG_POS': 'str'})
     return all_sites
+
 
 if __name__ == '__main__':
     # Create a single CSV file containing information about all sites from
