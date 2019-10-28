@@ -19,8 +19,8 @@ def get_all_indra_phos_stmts(filename, db_pkl, rlimsp_pkl):
 def get_db_phos_stmts(filename):
     from indra_db.client import get_statements_by_gene_role_type
     phos_stmts = get_statements_by_gene_role_type(
-                        stmt_type='Phosphorylation', fix_refs=False,
-                        preassembled=False,
+                        stmt_type='Phosphorylation', fix_refs=True,
+                        preassembled=False, agent_ns=None,
                         with_evidence=True, with_support=False)
     with open(filename, 'wb') as f:
         pickle.dump(phos_stmts, f)
