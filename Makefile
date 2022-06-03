@@ -93,7 +93,7 @@ $(OUTPUT)/indra_sparser_agent_mod.sites.pkl: \
 
 # COLLECT_SITES --------------------------------------------------------------
 # PC Sites/Biopax
-$(OUTPUT)/%.sites.pkl: $(DATA)/biopax/%.owl
+$(OUTPUT)/%.sites.pkl: $(DATA)/biopax/%.owl.gz
 	python -m protmapper_paper.get_sites.biopax $< $@
 
 # BEL Sites
@@ -123,11 +123,10 @@ $(OUTPUT)/reader_sites.pkl: $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl
 $(OUTPUT)/all_sites.pkl: \
     $(OUTPUT)/signor.sites.pkl \
     $(OUTPUT)/bel_large_corpus.sites.pkl \
-    $(OUTPUT)/PathwayCommons10.kegg.BIOPAX.sites.pkl \
-    $(OUTPUT)/PathwayCommons10.panther.BIOPAX.sites.pkl \
-    $(OUTPUT)/PathwayCommons10.pid.BIOPAX.sites.pkl \
-    $(OUTPUT)/PathwayCommons10.reactome.BIOPAX.sites.pkl \
-    $(OUTPUT)/PathwayCommons10.wp.BIOPAX.sites.pkl \
+    $(OUTPUT)/PathwayCommons12.kegg.BIOPAX.sites.pkl \
+    $(OUTPUT)/PathwayCommons12.panther.BIOPAX.sites.pkl \
+    $(OUTPUT)/PathwayCommons12.pid.BIOPAX.sites.pkl \
+    $(OUTPUT)/PathwayCommons12.reactome.BIOPAX.sites.pkl \
     $(OUTPUT)/Kinase_substrates.sites.pkl \
     $(OUTPUT)/indra_reach.sites.pkl \
     $(OUTPUT)/indra_sparser.sites.pkl \

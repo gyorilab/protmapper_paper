@@ -3,12 +3,11 @@ import sys
 import pickle
 
 FILE_SOURCE_MAP = {
-    'PathwayCommons10.hprd.BIOPAX.sites.pkl': 'hprd',
-    'PathwayCommons10.kegg.BIOPAX.sites.pkl': 'kegg',
-    'PathwayCommons10.panther.BIOPAX.sites.pkl': 'panther',
-    'PathwayCommons10.pid.BIOPAX.sites.pkl': 'pid',
-    'PathwayCommons10.reactome.BIOPAX.sites.pkl': 'reactome',
-    'PathwayCommons10.wp.BIOPAX.sites.pkl': 'wp',
+    'PathwayCommons12.hprd.BIOPAX.sites.pkl': 'hprd',
+    'PathwayCommons12.kegg.BIOPAX.sites.pkl': 'kegg',
+    'PathwayCommons12.panther.BIOPAX.sites.pkl': 'panther',
+    'PathwayCommons12.pid.BIOPAX.sites.pkl': 'pid',
+    'PathwayCommons12.reactome.BIOPAX.sites.pkl': 'reactome',
      #'psp_kinase_substrate_tsv.sites.pkl': 'psp',
     'Kinase_substrates.sites.pkl': 'psp',
     'bel_large_corpus.sites.pkl': 'bel',

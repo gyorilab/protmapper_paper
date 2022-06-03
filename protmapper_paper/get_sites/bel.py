@@ -11,7 +11,7 @@ if __name__ == '__main__':
     if sys.argv[1] == 'parse_belscript':
         input_file = sys.argv[2]
         output_file = sys.argv[3]
-        pbg = pybel.from_path(input_file)
+        pbg = pybel.from_bel_script(input_file)
         pybel.to_pickle(pbg, output_file)
     # Get all variant sites from the graph
     #elif sys.argv[1] == 'get_pybel_mod_agents':

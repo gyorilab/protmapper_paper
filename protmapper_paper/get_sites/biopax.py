@@ -1,3 +1,4 @@
+import gzip
 import sys
 import pickle
 from indra.tools import assemble_corpus as ac
@@ -5,7 +6,7 @@ from indra.statements import Agent, ModCondition, Phosphorylation, \
                              Dephosphorylation
 from indra.sources import biopax
 from indra.sources.biopax import processor as bpc
-from indra.sources.biopax import pathway_commons_client as pcc
+from pybiopax import pc_client as pcc
 from .util import get_mod_sites
 
 def save_modified_agents(owl_file, output_file):
@@ -51,7 +52,11 @@ def save_modified_agents(owl_file, output_file):
 
 
 def save_phosphorylation_stmts(owl_file, pkl_file):
-    bp = biopax.process_owl(owl_file)
+    if owl_file.endswith('.gz'):
+        with gzip.open(owl_file, 'rt') as fh:
+            bp = biopax.process_owl_str(fh.read())
+    else:
+        bp = biopax.process_owl(owl_file)
     sites = get_mod_sites(bp.statements)
     with open(pkl_file, 'wb') as f:
         pickle.dump(sites, f)
