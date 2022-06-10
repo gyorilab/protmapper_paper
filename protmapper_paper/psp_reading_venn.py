@@ -2,6 +2,7 @@ import pandas
 import matplotlib
 from matplotlib import pyplot as plt
 from matplotlib_venn import venn2, venn3
+from indra.ontology.bio import bio_ontology
 from indra.statements import Agent
 from indra.tools.expand_families import Expander
 from indra.databases import hgnc_client, uniprot_client
@@ -84,8 +85,8 @@ def filter_kinase_annots(annot_sites, include_fplx=True):
             if hgnc_client.is_kinase(ctrl_id):
                 kinase_sites[k] = v
         elif include_fplx and ctrl_ns == 'FPLX':
-            children = expander.get_children(Agent(ctrl_id,
-                                                   db_refs={'FPLX': ctrl_id}))
+            children = bio_ontology.get_children(ctrl_ns, ctrl_id,
+                                                 ns_filter=['HGNC'])
             for _, hgnc_id in children:
                 hgnc_name = hgnc_client.get_hgnc_name(hgnc_id)
                 if hgnc_client.is_kinase(hgnc_name):

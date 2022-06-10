@@ -315,15 +315,11 @@ def plot_site_count_dist(sites, num_sites=240):
 def map_pc_sites():
     pm = ProtMapper(use_cache=True, cache_path=CACHE_PATH)
     agent_files = {
-        'hprd': 'output/biopax/PathwayCommons10.hprd.BIOPAX.pkl',
-        'kegg': 'output/biopax/PathwayCommons10.kegg.BIOPAX.pkl',
-        'panther': 'output/biopax/PathwayCommons10.panther.BIOPAX.pkl',
-        'pid': 'output/biopax/PathwayCommons10.pid.BIOPAX.pkl',
-        'psp_pc': 'output/biopax/PathwayCommons10.psp.BIOPAX.pkl',
-        'pc_tsv': 'output/psp_kinase_substrate_tsv.pkl',
-        'reactome': 'output/biopax/PathwayCommons10.reactome.BIOPAX.pkl',
-        'wp': 'output/biopax/PathwayCommons10.wp.BIOPAX.pkl',
-        'psp_biopax': 'output/biopax/Kinase_substrates.pkl',
+        'kegg': 'output/PathwayCommons12.kegg.BIOPAX.sites.pkl',
+        'panther': 'output/PathwayCommons12.panther.BIOPAX.sites.pkl',
+        'pid': 'output/PathwayCommons12.pid.BIOPAX.sites.pkl',
+        'reactome': 'output/biopax/PathwayCommons10.reactome.BIOPAX.sites.pkl',
+        'hprd': 'output/hprd.sites.pkl'
         #'reactome_human': 'output/biopax/Homo_sapiens.pkl',
     }
     all_sites = {}

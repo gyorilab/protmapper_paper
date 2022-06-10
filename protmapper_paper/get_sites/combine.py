@@ -3,7 +3,6 @@ import sys
 import pickle
 
 FILE_SOURCE_MAP = {
-    'PathwayCommons12.hprd.BIOPAX.sites.pkl': 'hprd',
     'PathwayCommons12.kegg.BIOPAX.sites.pkl': 'kegg',
     'PathwayCommons12.panther.BIOPAX.sites.pkl': 'panther',
     'PathwayCommons12.pid.BIOPAX.sites.pkl': 'pid',
@@ -12,6 +11,7 @@ FILE_SOURCE_MAP = {
     'Kinase_substrates.sites.pkl': 'psp',
     'bel_large_corpus.sites.pkl': 'bel',
     'signor.sites.pkl': 'signor',
+    'hprd.sites.pkl': 'hprd',
     'indra_reach.sites.pkl': 'reach',
     'indra_sparser.sites.pkl': 'sparser',
     'indra_rlimsp.sites.pkl': 'rlimsp',

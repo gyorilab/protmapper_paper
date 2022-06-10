@@ -107,6 +107,10 @@ $(OUTPUT)/bel_large_corpus.sites.pkl: $(OUTPUT)/large_corpus_pybel.pkl
 $(OUTPUT)/signor.sites.pkl:
 	python -m protmapper_paper.get_sites.signor $@
 
+# HPRD sites
+$(OUTPUT)/hprd.sites.pkl: $(DATA)/HPRD_FLAT_FILES_041310.tar.gz
+	python -m protmapper_paper.get_sites.hprd $< $@
+
 # Reader Sites
 $(OUTPUT)/reader_sites.pkl: $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl
 	python get_indra_sites.py reader_sites $<
@@ -122,6 +126,7 @@ $(OUTPUT)/reader_sites.pkl: $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl
 #$(OUTPUT)/biopax/Homo_sapiens.pkl
 $(OUTPUT)/all_sites.pkl: \
     $(OUTPUT)/signor.sites.pkl \
+    $(OUTPUT)/hprd.sites.pkl \
     $(OUTPUT)/bel_large_corpus.sites.pkl \
     $(OUTPUT)/PathwayCommons12.kegg.BIOPAX.sites.pkl \
     $(OUTPUT)/PathwayCommons12.panther.BIOPAX.sites.pkl \
