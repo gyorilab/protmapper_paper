@@ -154,7 +154,7 @@ def create_export(site_stmts, mapping_results, export_file, evs_file):
                     if hgnc_client.is_kinase(ctrl_gene_name):
                         ctrl_is_kinase = True
                 # Map human gene names to UniProt IDs
-                if ctrl_ns == 'HGNC':
+                elif ctrl_ns == 'HGNC':
                     gene_name = hgnc_client.get_hgnc_name(ctrl_id)
                     if hgnc_client.is_kinase(gene_name):
                         ctrl_is_kinase = True
@@ -163,7 +163,7 @@ def create_export(site_stmts, mapping_results, export_file, evs_file):
                         ctrl_ns = 'UP'
                         ctrl_gene_name = gene_name
                         ctrl_id = up_id
-                if ctrl_ns == 'FPLX':
+                elif ctrl_ns == 'FPLX':
                     children = expander.get_children(
                         Agent(ctrl_id, db_refs={'FPLX': ctrl_id}))
                     for _, hgnc_id in children:

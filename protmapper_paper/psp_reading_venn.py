@@ -82,7 +82,8 @@ def filter_kinase_annots(annot_sites, include_fplx=True):
         if ctrl_ns == 'HGNC':
             # If genes with HGNC IDs aren't known to be kinases, they will
             # be filtered out here
-            if hgnc_client.is_kinase(ctrl_id):
+            hgnc_name = hgnc_client.get_hgnc_name(ctrl_id)
+            if hgnc_client.is_kinase(hgnc_name):
                 kinase_sites[k] = v
         elif include_fplx and ctrl_ns == 'FPLX':
             children = bio_ontology.get_children(ctrl_ns, ctrl_id,
