@@ -7,6 +7,7 @@ matplotlib.use('agg')
 import pandas as pd
 from matplotlib import pyplot as plt
 from indra.util import plot_formatting as pf
+from indra.ontology.bio import bio_ontology
 
 
 def create_site_csv(site_dict, mapping_results, site_file, annot_file):
@@ -86,10 +87,7 @@ def create_site_csv(site_dict, mapping_results, site_file, annot_file):
 
 def create_export(site_stmts, mapping_results, export_file, evs_file):
     from indra.statements import Agent
-    from indra.tools.expand_families import Expander
     from indra.databases import uniprot_client, hgnc_client
-
-    expander = Expander()
 
     # Make header for main export file
     export_header = ['ID',
@@ -164,8 +162,8 @@ def create_export(site_stmts, mapping_results, export_file, evs_file):
                         ctrl_gene_name = gene_name
                         ctrl_id = up_id
                 elif ctrl_ns == 'FPLX':
-                    children = expander.get_children(
-                        Agent(ctrl_id, db_refs={'FPLX': ctrl_id}))
+                    children = bio_ontology.get_children('FPLX', ctrl_id,
+                                                         ns_filter={'HGNC'})
                     for _, hgnc_id in children:
                         gene_name = hgnc_client.get_hgnc_name(hgnc_id)
                         if hgnc_client.is_kinase(gene_name):
@@ -352,13 +350,14 @@ def plot_annot_stats(csv_file, output_base):
                              color='green')
         fig_mapped.gca().bar(ix, height=len(unmapped),
                              bottom=(len(valid) + len(mapped)), color='red')
-    plt.xticks(range(len(sources)), sources, rotation="vertical")
-    plt.ylabel('Unique Site Annotations')
-    plt.subplots_adjust(left=0.31, bottom=0.25, top=0.90)
-    #plt.legend(loc='upper right', fontsize=pf.fontsize)
-    for fig in (fig_valid, fig_mapped):
+    for fig in [fig_valid, fig_mapped]:
         ax = fig.gca()
         pf.format_axis(ax)
+        ax.xaxis.set_ticks(range(len(sources)))
+        ax.set_xticklabels(labels=sources, rotation='vertical')
+        ax.set_ylabel('Unique Site Annotations')
+        fig.subplots_adjust(left=0.31, bottom=0.25, top=0.90)
+        #fig.legend(loc='upper right', fontsize=pf.fontsize)
     fig_valid.savefig('%s_valid_counts.pdf' % output_base)
     fig_mapped.savefig('%s_mapped_counts.pdf' % output_base)
 
