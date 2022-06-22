@@ -284,6 +284,21 @@ def print_stats(site_df):
         print("  Invalid: %d (%0.1f)" % (f_inv, pct(f_inv, f)))
         print("  Mapped:  %d (%0.1f)" % (f_map, pct(f_map, f)))
         print("Pct occurrences mapped: %0.1f\n" % pct(f_map, f_inv))
+
+    # Print data for Figure 1B on MAPK1 sites
+    stats = defaultdict(list)
+    sites = [('T', 182), ('T', 183), ('T', 185), ('Y', 184), ('Y', 185),
+             ('Y', 187)]
+    for _, row in site_df[site_df['GENE_NAME'] == 'MAPK1'].iterrows():
+        pos = int(row['ORIG_POS'])
+        stats[(row['ORIG_RES'], pos)].append((row['SOURCE'], row['FREQ']))
+    print('Table for Figure 1B\n------------')
+    print('Site', 'Occ.', 'Sources')
+    for res, pos in sites:
+        src = len({s for s, c in stats[(res, pos)]})
+        occ = sum([c for s, c in stats[(res, pos)]])
+        print('%s%s' % (res, pos), occ, src)
+
     # Sample 100 invalid-unmapped (by unique sites)
     # Sample 100 invalid-mapped (by unique sites)
     results_df = pd.DataFrame.from_dict(results, orient='index')
