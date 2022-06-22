@@ -28,6 +28,7 @@ if __name__ == '__main__':
     all_sites = {}
     for site_file in input_files:
         source = FILE_SOURCE_MAP[os.path.basename(site_file)]
+        print('Loading %s from %s' % (source, site_file))
         with open(site_file, 'rb') as f:
             site_dict = pickle.load(f)
             for site in site_dict:
@@ -36,4 +37,5 @@ if __name__ == '__main__':
                 all_sites[site]['lhs'][source] = site_dict[site]['lhs']
                 all_sites[site]['rhs'][source] = site_dict[site]['rhs']
     with open(output_file, 'wb') as f:
+        print('Writing into %s' % output_file)
         pickle.dump(all_sites, f)

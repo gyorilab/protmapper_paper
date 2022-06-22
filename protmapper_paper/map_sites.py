@@ -23,6 +23,7 @@ def map_sites(sites_dict):
     # Now that we've collected a list of all the sites, tabulate frequencies
     return site_map
 
+
 if __name__ == '__main__':
     input_file = sys.argv[1]
     output_file = sys.argv[2]

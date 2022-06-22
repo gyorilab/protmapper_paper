@@ -341,6 +341,11 @@ def plot_annot_stats(csv_file, output_base):
     #sources = site_df.SOURCE.unique()
     sources = ['psp', 'signor', 'hprd', 'pid', 'reactome', 'bel',
                'reach', 'sparser', 'rlimsp']
+    source_labels = ['PSP', 'SIGNOR', 'HPRD', 'NCI-PID',
+                     'Reactome', 'BEL', 'Reach', 'Sparser', 'RLIMS-P']
+
+    # First, generate plot of absolute valid/invalid sites
+    # (Figure 1B and Figure 2E)
     fig_valid = plt.figure(figsize=(1.8, 2.2), dpi=150)
     fig_mapped = plt.figure(figsize=(1.8, 2.2), dpi=150)
     for ix, source in enumerate(sources):
@@ -357,7 +362,7 @@ def plot_annot_stats(csv_file, output_base):
         fig_valid.gca().bar(ix, height=len(valid), color='blue',
                             label='In Ref Seq')
         fig_valid.gca().bar(ix, height=len(invalid), bottom=len(valid),
-                color='red', label='Not in Ref Seq')
+                            color='red', label='Not in Ref Seq')
         # Plot for mapped stats
         fig_mapped.gca().bar(ix, height=len(valid), color='blue',
                              label='In Ref Seq')
@@ -369,17 +374,18 @@ def plot_annot_stats(csv_file, output_base):
         ax = fig.gca()
         pf.format_axis(ax)
         ax.xaxis.set_ticks(range(len(sources)))
-        ax.set_xticklabels(labels=sources, rotation='vertical')
+        ax.set_xticklabels(labels=source_labels, rotation='vertical')
         ax.set_ylabel('Unique Site Annotations')
-        fig.subplots_adjust(left=0.31, bottom=0.25, top=0.90)
+        fig.subplots_adjust(left=0.31, bottom=0.25, top=0.95)
         #fig.legend(loc='upper right', fontsize=pf.fontsize)
     fig_valid.savefig('%s_valid_counts.pdf' % output_base)
     fig_mapped.savefig('%s_mapped_counts.pdf' % output_base)
 
+    # Now generate the plot of invalid site percentages
+    # (Figure 1C and Figure 2F)
     results = []
-    # Now generate the plot of invalid site proportions
-    fig_valid = plt.figure(figsize=(1.8, 2.2), dpi=150)
-    fig_mapped = plt.figure(figsize=(1.8, 2.2), dpi=150)
+    fig_valid = plt.figure(figsize=(1.8, 2.4), dpi=150)
+    fig_mapped = plt.figure(figsize=(1.8, 2.4), dpi=150)
     for ix, source in enumerate(sources):
         source_anns = site_df[site_df.SOURCE == source]
         valid = source_anns[source_anns.VALID == True]
@@ -409,14 +415,17 @@ def plot_annot_stats(csv_file, output_base):
                              bottom=pct_valid, color='green')
         fig_mapped.gca().bar(ix, height=pct_unmapped,
                              bottom=(pct_valid + pct_mapped), color='red')
-    plt.xticks(range(len(sources)), sources, rotation="vertical")
-    plt.ylabel('Pct. Unique Site Annotations')
-    plt.subplots_adjust(left=0.31, bottom=0.25, top=0.90)
-    for fig in (fig_valid, fig_mapped):
+    for fig in [fig_valid, fig_mapped]:
         ax = fig.gca()
         pf.format_axis(ax)
+        ax.xaxis.set_ticks(range(len(sources)))
+        ax.set_xticklabels(labels=source_labels, rotation='vertical')
+        ax.set_ylabel('Pct. Unique Site Annotations')
+        fig.subplots_adjust(left=0.31, bottom=0.25, top=0.90)
     fig_valid.savefig('%s_valid_pcts.pdf' % output_base)
     fig_mapped.savefig('%s_mapped_pcts.pdf' % output_base)
+
+    # This is where Table 1 comes from
     result_df = pd.DataFrame.from_records(results, columns=
             ['SOURCE', 'TOTAL', 'VALID', 'VALID_PCT', 'INVALID', 'INVALID_PCT',
              'MAPPED', 'MAPPED_PCT_INVALID'])
