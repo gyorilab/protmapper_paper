@@ -1,6 +1,9 @@
 """Script to generate mapping statistics for CPTAC data sets."""
+import os.path
 import re
+import csv
 import sys
+import tqdm
 import numpy as np
 import pandas as pd
 from protmapper import ProtMapper
@@ -117,11 +120,9 @@ def iso_specific(up_id):
 def valid_counts(sitelist):
     results = []
     pm = ProtMapper()
-    for ix, (refseq, gene, res, pos, pep, respos) in enumerate(sitelist):
+    for refseq, gene, res, pos, pep, respos in tqdm.tqdm(sitelist):
         result = {'refseq': refseq, 'gene': gene, 'res': res, 'pos': pos,
                   'peptide': pep, 'respos': respos}
-        if ix % 10000 == 0:
-            print(ix)
         up_rs = up_id_for_rs(refseq)
         hgnc_name, up_hgnc = up_for_hgnc(gene)
         result['up_hgnc'] = up_hgnc
@@ -142,38 +143,75 @@ def valid_counts(sitelist):
     return df
 
 
-def print_valid_stats(df):
+def print_valid_stats(df, fname):
+    rows = []
+
+    # HGNC rows
+    id = 'hgnc'
+    source_id = "HGNC"
     no_up_id_hgnc = df[df.up_hgnc.isna()]
-    has_up_id_hgnc = df[~df.up_hgnc.isna()]
-    no_up_id_rs = df[df.up_rs.isna()]
-    has_up_id_rs = df[~df.up_rs.isna()]
-    iso_spec = df[df.up_rs_iso_specific == True]
-    print()
-    print("Total Sites: %d" % len(df))
+    rows.append([source_id, "No UniProt ID, invalid gene symbol",
+                 len(no_up_id_hgnc),
+                 '%.1f' % (100 * len(no_up_id_hgnc) / len(df))])
     print("No Uniprot ID from HGNC: %d" % len(no_up_id_hgnc))
-    print("No Uniprot ID from RS: %d" % len(no_up_id_rs))
-    print("Isoform-specific RS ID: %d (%.1f)" % (len(iso_spec),
-                                           100 * len(iso_spec) / len(df)))
-    print("Isoform-specific RS but mappable: %d" %
-            (len(iso_spec[iso_spec['mappable_hgnc'] == True])))
-    print("No Uniprot ID from RS but mappable: %d"
-            % (len(no_up_id_rs[no_up_id_rs.mappable_hgnc == True])))
-    for id in ('hgnc', 'rs'):
-        valid = df[df['valid_%s' % id] == True]
-        invalid = df[df['valid_%s' % id] == False]
-        vm = valid[valid['mappable_%s' % id] == True]
-        vnm = valid[valid['mappable_%s' % id] == False]
-        ivm = invalid[invalid['mappable_%s' % id] == True]
-        ivnm = invalid[invalid['mappable_%s' % id] == False]
-        print("%s Valid: %d" % (id, len(valid)))
-        print("%s Invalid: %d (%.1f)" %
-            (id, len(invalid), (100 * len(invalid) / len(df))))
-        print("%s Valid mappable: %d" % (id, len(vm)))
-        print("%s Valid not mappable: %d" % (id, len(vnm)))
-        print("%s Invalid mappable: %d" % (id, len(ivm)))
-        print("%s Invalid not mappable: %d" % (id, len(ivnm)))
-        print("%s total mappable: %d" %
-                (id, len(df[df['mappable_%s' % id] == True])))
+
+    valid = df[df['valid_%s' % id] == True]
+    label = "Valid in UniProt ref sequence for gene"
+    rows.append([source_id, label,
+                 str(len(valid)), '%.1f' % (100 * len(valid) / len(df))])
+
+    invalid = df[df['valid_%s' % id] == False]
+    label = "Not valid in UniProt ref sequence for gene"
+    rows.append([source_id, label,
+                 str(len(invalid)), '%.1f' % (100 * len(invalid) / len(df))])
+
+    ivm = invalid[invalid['mappable_%s' % id] == True]
+    rows.append([source_id, "Invalid but mappable to UniProt ref sequence",
+                 str(len(ivm)), '%.1f' % (100 * len(ivm) / len(df))])
+
+    tm = df[df['mappable_%s' % id] == True]
+    rows.append([source_id, "Total mappable to UniProt ref sequence",
+                 str(len(tm)), '%.1f' % (100 * len(tm) / len(df))])
+
+    # RS rows
+    id = 'rs'
+    source_id = "RefSeq"
+    no_up_id_rs = df[df.up_rs.isna()]
+    rows.append([source_id, "No UniProt ID",
+                 len(no_up_id_rs),
+                 '%.1f' % (100 * len(no_up_id_rs) / len(df))])
+
+    noupm = no_up_id_rs[no_up_id_rs.mappable_hgnc == True]
+    rows.append([source_id, "No UniProt ID, mappable to UniProt seq via HGNC",
+                 len(noupm),
+                 '%.1f' % (100 * len(noupm) / len(df))])
+
+    valid = df[df['valid_%s' % id] == True]
+    label = "Valid in UniProt sequence from RefSeq ID"
+    rows.append([source_id, label,
+                 str(len(valid)), '%.1f' % (100 * len(valid) / len(df))])
+
+    invalid = df[df['valid_%s' % id] == False]
+    label = "Not valid in UniProt sequence from RefSeq ID"
+    rows.append([source_id, label,
+                 str(len(invalid)), '%.1f' % (100 * len(invalid) / len(df))])
+
+    iso_spec = df[df.up_rs_iso_specific == True]
+    rows.append([source_id, "Isoform-specific ID",
+                 len(iso_spec),
+                 '%.1f' % (100 * len(iso_spec) / len(df))])
+
+    isospecu = iso_spec[iso_spec['mappable_hgnc'] == True]
+    rows.append([source_id, "Isoform-specific ID, mappable to UniProt ref seq",
+                 len(isospecu),
+                 '%.1f' % (100 * len(isospecu) / len(df))])
+
+    rows.append(['', "Total Sites", str(len(df)), "100.0"])
+
+    with open(fname, 'w') as fh:
+        writer = csv.writer(fh)
+        writer.writerows(rows)
+    print("Total Sites: %d" % len(df))
 
 
 if __name__ == '__main__':
@@ -190,6 +228,8 @@ if __name__ == '__main__':
     # Save dataframe as CSV
     site_results.to_csv(output_file)
 
-    # Print results
-    print_valid_stats(site_results)
+    # Print results - Table 5, note that BRCA and OVCA columns are generated
+    # separately
+    stats_table_file = os.path.splitext(output_file)[0] + '_summary.csv'
+    print_valid_stats(site_results, stats_table_file)
 
