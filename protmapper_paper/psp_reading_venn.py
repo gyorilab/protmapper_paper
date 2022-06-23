@@ -137,15 +137,15 @@ if __name__ == '__main__':
     # Sites: PSP vs. DB vs. Readers
     plt.figure()
     venn3(get_venn_dict_unweighted([psp_sites, db_no_psp_sites, reader_sites]),
-          set_labels=('PhosphoSitePlus', 'HPRD/SIGNOR/PID/\nReactome/BEL',
-                      'REACH/Sparser/\nRLIMS-P'),
+          set_labels=('PhosphoSitePlus', 'HPRD/SIGNOR/\nNCI-PID/\nReactome/BEL',
+                      'Reach/Sparser/\nRLIMS-P'),
           set_colors=('r', 'b', 'g'))
     plt.savefig('plots/psp_reader_sites_overlap_distinct.pdf')
 
     # Sites: REACH vs. Sparser vs. RLIMS-P
     plt.figure()
     venn3(get_venn_dict_unweighted([reach_sites, sparser_sites, rlimsp_sites]),
-          set_labels=('REACH', 'Sparser', 'RLIMS-P'))
+          set_labels=('Reach', 'Sparser', 'RLIMS-P'))
     plt.savefig('plots/reader_sites_overlap_distinct.pdf')
 
     # ANNOTATIONS
@@ -167,8 +167,8 @@ if __name__ == '__main__':
     plt.figure()
     venn3(get_venn_dict_unweighted([psp_annots, db_no_psp_annots,
                                     reader_annots]),
-          set_labels=('PhosphoSitePlus', 'HPRD/SIGNOR/PID/\nReactome/BEL',
-                      'REACH/Sparser/\nRLIMS-P'),
+          set_labels=('PhosphoSitePlus', 'HPRD/SIGNOR/\nNCI-PID/\nReactome/BEL',
+                      'Reach/Sparser/\nRLIMS-P'),
           set_colors=('r', 'b', 'g'))
     plt.savefig('plots/psp_db_reader_annotation_overlap_distinct.pdf')
 
@@ -176,7 +176,7 @@ if __name__ == '__main__':
     plt.figure()
     venn3(get_venn_dict_unweighted([reach_annots, sparser_annots,
                                     rlimsp_annots]),
-          set_labels=('REACH', 'Sparser', 'RLIMS-P'))
+          set_labels=('Reach', 'Sparser', 'RLIMS-P'))
     plt.savefig('plots/reader_annotation_overlap_distinct.pdf')
 
     # Kinases only
@@ -192,8 +192,8 @@ if __name__ == '__main__':
     plt.figure()
     venn3(get_venn_dict_unweighted([psp_annotsk, db_no_psp_annotsk,
                                     reader_annotsk]),
-          set_labels=('PhosphoSitePlus', 'HPRD/SIGNOR/PID/\nReactome/BEL',
-                      'REACH/Sparser/\nRLIMS-P'),
+          set_labels=('PhosphoSitePlus', 'HPRD/SIGNOR/\nNCI-PID/\nReactome/BEL',
+                      'Reach/Sparser/\nRLIMS-P'),
           set_colors=('r', 'b', 'g'))
     plt.savefig('plots/psp_db_reader_annotation_overlap_distinct_kinase.pdf')
 
@@ -201,7 +201,7 @@ if __name__ == '__main__':
     plt.figure()
     venn3(get_venn_dict_unweighted([reach_annotsk, sparser_annotsk,
                                     rlimsp_annotsk]),
-          set_labels=('REACH', 'Sparser', 'RLIMS-P'))
+          set_labels=('Reach', 'Sparser', 'RLIMS-P'))
     plt.savefig('plots/reader_annotation_overlap_distinct_kinase.pdf')
 
     # Non-FamPlex Kinases only
@@ -217,8 +217,8 @@ if __name__ == '__main__':
     plt.figure()
     venn3(get_venn_dict_unweighted([psp_annotskn, 
                                     db_no_psp_annotskn, reader_annotskn]),
-          set_labels=('PhosphoSitePlus', 'HPRD/SIGNOR/PID/\nReactome/BEL',
-                      'REACH/Sparser/\nRLIMS-P'),
+          set_labels=('PhosphoSitePlus', 'HPRD/SIGNOR/\nNCI-PID/\nReactome/BEL',
+                      'Reach/Sparser/\nRLIMS-P'),
           set_colors=('r', 'b', 'g'))
     plt.savefig(
         'plots/psp_db_reader_annotation_overlap_distinct_kinase_nofamplex.pdf')
@@ -227,7 +227,7 @@ if __name__ == '__main__':
     plt.figure()
     venn3(get_venn_dict_unweighted([reach_annotskn, sparser_annotskn,
                                     rlimsp_annotskn]),
-          set_labels=('REACH', 'Sparser', 'RLIMS-P'))
+          set_labels=('Reach', 'Sparser', 'RLIMS-P'))
     plt.savefig('plots/reader_annotation_overlap_distinct_kinase_nofamplex.pdf')
 
     print_reading_contribs(reader_annotskn, psp_annotskn)
