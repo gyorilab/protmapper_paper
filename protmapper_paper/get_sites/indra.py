@@ -94,8 +94,9 @@ def get_db_phos_stmts(phos_fname, agent_fname):
             stmts_jsons = []
             for raw_stmt_id, db_info_id, reading_id, stmt_json_raw in lines:
                 refs = None
-                # Skip non-phosphorylations
-                if 'phosphorylation' not in stmt_json_raw:
+                # Skip non-phosphorylations - quick pre-filter at the JSON
+                # string level
+                if 'Phosphorylation' not in stmt_json_raw:
                     continue
                 if reading_id != '\\N':
                     # Skip if this is for a dropped reading
