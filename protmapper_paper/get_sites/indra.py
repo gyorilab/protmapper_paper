@@ -95,9 +95,12 @@ def get_db_phos_stmts(phos_fname, agent_fname):
             for raw_stmt_id, db_info_id, reading_id, stmt_json_raw in lines:
                 refs = None
                 # Skip non-phosphorylations - quick pre-filter at the JSON
-                # string level
-                if 'Phosphorylation' not in stmt_json_raw:
+                # string level to find Phosphorylation statements and also
+                # Agents with a phosphorylation mod condition
+                if 'phosphorylation' not in stmt_json_raw.lower():
                     continue
+                # We are focusing on reading here so we need to recover
+                # text references
                 if reading_id != '\\N':
                     # Skip if this is for a dropped reading
                     if int(reading_id) in drop_readings:
@@ -105,17 +108,21 @@ def get_db_phos_stmts(phos_fname, agent_fname):
                     text_ref_id = reading_id_to_text_ref_id.get(int(reading_id))
                     if text_ref_id:
                         refs = text_refs.get(text_ref_id)
+                # We can now load the JSON and fix the text references
                 stmt_json = load_statement_json(stmt_json_raw)
                 if refs:
                     stmt_json['evidence'][0]['text_refs'] = refs
                     if refs.get('PMID'):
                         stmt_json['evidence'][0]['pmid'] = refs['PMID']
                 stmts_jsons.append(stmt_json)
+            # Deserialize the set of statements and filter
             stmts = stmts_from_json(stmts_jsons)
             stmts = ac.filter_evidence_source(stmts, ['reach', 'sparser', 'rlimsp'])
             stmts = ac.fix_invalidities(stmts, in_place=True)
+            # Keep Phosphorylation statements with residue and position
             phos_stmts += [s for s in stmts if isinstance(s, Phosphorylation)
                            and s.residue and s.position]
+            # Separately extract agent site statements
             agent_site_stmts += [s for s in stmts
                                  if any(agent_has_psite(a)
                                         for a in s.real_agent_list())]
@@ -183,40 +190,6 @@ def get_reader_stmts_by_site(phos_stmts, reader, filename):
         pickle.dump(stmts_by_site, f)
 
 
-# TODO: generalize this to agent mod sites
-def get_reader_sites(input_file):
-    input_stmts = ac.load_statements(input_file)
-    readers = ('reach', 'sparser', 'rlimsp')
-    pm = ProtMapper(use_cache=True, cache_path=CACHE_PATH)
-    sites_by_reader = {}
-    # For all readers
-    for reader in readers:
-        sites = []
-        # Filter to stmts for this reader
-        reader_stmts = [s for s in input_stmts
-                        if s.evidence[0].source_api == reader]
-        for s in reader_stmts:
-            up_id = s.sub.db_refs.get('UP')
-            # Filter to stmts with substrate UP ID, residue and position
-            if up_id is None or s.residue is None or s.position is None:
-                continue
-            if s.residue not in ('S', 'T', 'Y'):
-                continue
-            site = (up_id, s.residue, s.position)
-            # Get the mapped site for the residue
-            ms = pm.map_to_human_ref(up_id, 'uniprot', s.residue, s.position)
-            sites.append(ms)
-        # Group, tabulate frequency
-        site_ctr = Counter(sites)
-        # Store in dict
-        sites_by_reader[reader] = site_ctr
-    # Save sites
-    with open('output/reader_sites.pkl', 'wb') as f:
-        pickle.dump(sites_by_reader, f)
-    # Save cache
-    pm.save_cache()
-
-
 if __name__ == '__main__':
     # Get statements from INDRA database
     if sys.argv[1] == 'get_db_phos_stmts':
@@ -239,8 +212,5 @@ if __name__ == '__main__':
         filename = sys.argv[4]
         input_stmts = ac.load_statements(input_file)
         get_reader_agent_mod_stmts_by_site(input_stmts, reader, filename)
-    elif sys.argv[1] == 'reader_sites':
-        input_file = sys.argv[2]
-        get_reader_sites(input_file)
     else:
         print("Unrecognized arguments.")

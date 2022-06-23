@@ -111,10 +111,6 @@ $(OUTPUT)/signor.sites.pkl:
 $(OUTPUT)/hprd.sites.pkl: $(DATA)/HPRD_FLAT_FILES_041310.tar.gz
 	python -m protmapper_paper.get_sites.hprd $< $@
 
-# Reader Sites
-$(OUTPUT)/reader_sites.pkl: $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl
-	python get_indra_sites.py reader_sites $<
-
 # Phosphosite from TSV
 #$(OUTPUT)/psp_kinase_substrate_tsv.pkl: \
 #    $(DATA)/Kinase_Substrate_Dataset
