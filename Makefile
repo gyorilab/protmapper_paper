@@ -6,8 +6,7 @@ DEPLOY := ../protmapper_manuscript/figures/figure_panels
 all: figs cptac export
 
 figs: $(PLOTS)/site_stats_by_site.pdf \
-      $(PLOTS)/psp_reader_sites_overlap_distinct.pdf \
-      $(PLOTS)/psp_reader_sites_overlap_distinct.pdf \
+      $(PLOTS)/psp_db_reader_sites_overlap_distinct.pdf \
 	  $(PLOTS)/reader_sites_overlap_distinct.pdf \
 	  $(PLOTS)/psp_db_reader_annotation_overlap_distinct.pdf \
 	  $(PLOTS)/reader_annotation_overlap_distinct.pdf \
@@ -161,7 +160,7 @@ $(PLOTS)/site_stats_by_site.pdf: $(OUTPUT)/site_info.csv
 	python -m protmapper_paper.analyze_sites plot_site_stats $< \
         $(PLOTS)/site_stats
 
-$(PLOTS)/psp_reader_sites_overlap_distinct.pdf $(PLOTS)/reader_sites_overlap_distinct.pdf $(PLOTS)/psp_db_reader_annotation_overlap_distinct.pdf $(PLOTS)/reader_annotation_overlap_distinct.pdf $(PLOTS)/psp_db_reader_annotation_overlap_distinct_kinase.pdf $(PLOTS)/reader_annotation_overlap_distinct_kinase.pdf $(PLOTS)/psp_db_reader_annotation_overlap_distinct_kinase_nofamplex.pdf $(PLOTS)/reader_annotation_overlap_distinct_kinase_nofamplex.pdf: \
+$(PLOTS)/psp_db_reader_sites_overlap_distinct.pdf $(PLOTS)/reader_sites_overlap_distinct.pdf $(PLOTS)/psp_db_reader_annotation_overlap_distinct.pdf $(PLOTS)/reader_annotation_overlap_distinct.pdf $(PLOTS)/psp_db_reader_annotation_overlap_distinct_kinase.pdf $(PLOTS)/reader_annotation_overlap_distinct_kinase.pdf $(PLOTS)/psp_db_reader_annotation_overlap_distinct_kinase_nofamplex.pdf $(PLOTS)/reader_annotation_overlap_distinct_kinase_nofamplex.pdf: \
     $(OUTPUT)/site_info.csv \
     $(OUTPUT)/annotations.csv
 	python -m protmapper_paper.psp_reading_venn
