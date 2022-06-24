@@ -34,8 +34,14 @@ if __name__ == '__main__':
             for site in site_dict:
                 if site not in all_sites:
                     all_sites[site] = {'lhs': {}, 'rhs': {}}
-                all_sites[site]['lhs'][source] = site_dict[site]['lhs']
-                all_sites[site]['rhs'][source] = site_dict[site]['rhs']
+                # Make sure we can handle separate agent mod statements
+                # for a given reader so we check if there is already
+                # something there for the given site and only overwrite
+                # if if there isn't.
+                if not all_sites[site]['lhs'].get(source):
+                    all_sites[site]['lhs'][source] = site_dict[site]['lhs']
+                if not all_sites[site]['rhs'].get(source):
+                    all_sites[site]['rhs'][source] = site_dict[site]['rhs']
     with open(output_file, 'wb') as f:
         print('Writing into %s' % output_file)
         pickle.dump(all_sites, f)

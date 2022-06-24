@@ -250,4 +250,4 @@ if __name__ == '__main__':
     fig.subplots_adjust(left=0, bottom=0, right=0.92, top=1)
     plt.savefig('plots/reader_annotation_overlap_distinct_kinase_nofamplex.pdf')
 
-    print_reading_contribs(reader_annotskn, psp_annotskn)
+    #print_reading_contribs(reader_annotskn, psp_annotskn)
