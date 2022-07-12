@@ -240,6 +240,9 @@ if __name__ == '__main__':
     fig.subplots_adjust(left=0.18, bottom=0.11, right=0.812, top=0.778)
     plt.savefig(
         'plots/psp_db_reader_annotation_overlap_distinct_kinase_nofamplex.pdf')
+    print('Kinase annots no FamPlex total: %d' %
+          (len(set(psp_annotskn) | set(db_no_psp_annotskn) |
+               set(reader_annotskn))))
 
     # Annotations: REACH vs. Sparser vs. RLIMS-P
     fig = plt.figure()
