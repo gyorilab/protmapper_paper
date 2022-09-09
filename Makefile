@@ -7,14 +7,14 @@ all: figs cptac export
 
 figs: $(PLOTS)/site_stats_by_site.pdf \
       $(PLOTS)/psp_db_reader_sites_overlap_distinct.pdf \
-	  $(PLOTS)/reader_sites_overlap_distinct.pdf \
-	  $(PLOTS)/psp_db_reader_annotation_overlap_distinct.pdf \
-	  $(PLOTS)/reader_annotation_overlap_distinct.pdf \
-	  $(PLOTS)/psp_db_reader_annotation_overlap_distinct_kinase.pdf \
-	  $(PLOTS)/reader_annotation_overlap_distinct_kinase.pdf \
-	  $(PLOTS)/psp_db_reader_annotation_overlap_distinct_kinase_nofamplex.pdf \
-	  $(PLOTS)/reader_annotation_overlap_distinct_kinase_nofamplex.pdf \
-	  $(PLOTS)/annotations_valid_counts.pdf
+      $(PLOTS)/reader_sites_overlap_distinct.pdf \
+      $(PLOTS)/psp_db_reader_annotation_overlap_distinct.pdf \
+      $(PLOTS)/reader_annotation_overlap_distinct.pdf \
+      $(PLOTS)/psp_db_reader_annotation_overlap_distinct_kinase.pdf \
+      $(PLOTS)/reader_annotation_overlap_distinct_kinase.pdf \
+      $(PLOTS)/psp_db_reader_annotation_overlap_distinct_kinase_nofamplex.pdf \
+      $(PLOTS)/reader_annotation_overlap_distinct_kinase_nofamplex.pdf \
+      $(PLOTS)/annotations_valid_counts.pdf
 
 cptac: \
     $(OUTPUT)/brca_peptide_mapping_results.csv \
