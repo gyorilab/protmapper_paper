@@ -110,15 +110,7 @@ $(OUTPUT)/signor.sites.pkl:
 $(OUTPUT)/hprd.sites.pkl: $(DATA)/HPRD_FLAT_FILES_041310.tar.gz
 	python -m protmapper_paper.get_sites.hprd $< $@
 
-# Phosphosite from TSV
-#$(OUTPUT)/psp_kinase_substrate_tsv.pkl: \
-#    $(DATA)/Kinase_Substrate_Dataset
-#	python -m protmapper_paper.get_sites.psp $< $@
-
 # All sites, combined into a single dict
-# Skipping the other sources for PSP and Reactome data
-#$(OUTPUT)/biopax/PathwayCommons10.psp.BIOPAX.pkl
-#$(OUTPUT)/biopax/Homo_sapiens.pkl
 $(OUTPUT)/all_sites.pkl: \
     $(OUTPUT)/signor.sites.pkl \
     $(OUTPUT)/hprd.sites.pkl \
@@ -195,12 +187,4 @@ $(OUTPUT)/ovca_annotation_counts.csv: \
     $(OUTPUT)/annotations.csv \
     $(DATA)/TCGA_Ovarian_PNNL_Phosphoproteome.phosphosite.itraq.tsv
 	python -m protmapper_paper.annotation_count $< $(word 2,$^) $@
-
-
-# MOUSE data ---------------------------------------------------------
-
-$(OUTPUT)/psp_relations_by_site.pkl: $(DATA)/Kinase_Substrate_Dataset
-	python get_psp_tsv_sites.py
-
-#$(OUTPUT)/mouse_kin_sub_count.txt: $(OUTPUT)/psp_relations_by_site.pkl
 
