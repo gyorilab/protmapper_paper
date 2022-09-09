@@ -7,7 +7,6 @@ FILE_SOURCE_MAP = {
     'PathwayCommons12.panther.BIOPAX.sites.pkl': 'panther',
     'PathwayCommons12.pid.BIOPAX.sites.pkl': 'pid',
     'PathwayCommons12.reactome.BIOPAX.sites.pkl': 'reactome',
-     #'psp_kinase_substrate_tsv.sites.pkl': 'psp',
     'Kinase_substrates.sites.pkl': 'psp',
     'bel_large_corpus.sites.pkl': 'bel',
     'signor.sites.pkl': 'signor',
