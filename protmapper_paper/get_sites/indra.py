@@ -4,22 +4,12 @@ import sys
 import gzip
 import json
 import pickle
-import itertools
-from collections import defaultdict, Counter
 import pandas
 import pystow
 import tqdm
 from indra.statements import stmts_from_json, Phosphorylation
 from indra.tools import assemble_corpus as ac
 from indra.util import batch_iter
-from indra_db.util import get_primary_db, get_raw_stmts_frm_db_list
-
-
-def get_all_indra_phos_stmts(filename, db_pkl, rlimsp_pkl):
-    with open(db_pkl, 'rb') as fh:
-        db_stmts = pickle.load(fh)
-    with open(filename, 'wb') as fh:
-        pickle.dump(db_stmts, fh)
 
 
 class StatementJSONDecodeError(Exception):
