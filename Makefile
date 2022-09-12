@@ -115,8 +115,6 @@ $(OUTPUT)/all_sites.pkl: \
     $(OUTPUT)/signor.sites.pkl \
     $(OUTPUT)/hprd.sites.pkl \
     $(OUTPUT)/bel_large_corpus.sites.pkl \
-    $(OUTPUT)/PathwayCommons12.kegg.BIOPAX.sites.pkl \
-    $(OUTPUT)/PathwayCommons12.panther.BIOPAX.sites.pkl \
     $(OUTPUT)/PathwayCommons12.pid.BIOPAX.sites.pkl \
     $(OUTPUT)/PathwayCommons12.reactome.BIOPAX.sites.pkl \
     $(OUTPUT)/Kinase_substrates.sites.pkl \
