@@ -34,10 +34,14 @@ def get_mod_sites(indra_stmts):
             if subj and subj.mods and 'UP' in subj.db_refs:
                 add_agent_mods(stmt, subj)
             # Second, check if the statement is a Phos/Dephos stmt
-            if (isinstance(stmt, Phosphorylation) or \
-               isinstance(stmt, Dephosphorylation)) and \
-               'UP' in stmt.sub.db_refs:
-                site = (stmt.sub.db_refs['UP'], stmt.residue, stmt.position)
+            if (isinstance(stmt, Phosphorylation) or
+                isinstance(stmt, Dephosphorylation)) and \
+                    ('UP' in stmt.sub.db_refs or 'UPISO' in stmt.sub.db_refs):
+                if 'UPISO' in stmt.sub.db_refs:
+                    up_id = stmt.sub.db_refs['UPISO']
+                else:
+                    up_id = stmt.sub.db_refs['UP']
+                site = (up_id, stmt.residue, stmt.position)
                 add_site(site, 'rhs', stmt)
     return sites
 
