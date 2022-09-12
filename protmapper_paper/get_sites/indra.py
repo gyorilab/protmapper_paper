@@ -127,8 +127,9 @@ def preprocess_db_stmts(stmts, output_file):
     """Take the statements from the database and grounding map them; """
     print("Mapping grounding")
     gmap_stmts = ac.map_grounding(stmts)
-    #ac.dump_statements(gmap_stmts, prefix + '_gmap.pkl')
     print("Sorting and filtering")
+    # Unique here is in the sense of the statement + its evidence, to make
+    # sure we don't have redundant evidences
     uniq_stmts = list({s.get_hash(shallow=False): s
                        for s in gmap_stmts}.values())
     # Organize into a dictionary indexed by site

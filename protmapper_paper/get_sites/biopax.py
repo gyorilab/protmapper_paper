@@ -1,4 +1,3 @@
-import gzip
 import sys
 import pickle
 from indra.sources import biopax
@@ -7,8 +6,7 @@ from .util import get_mod_sites
 
 def save_phosphorylation_stmts(owl_file, pkl_file):
     if owl_file.endswith('.gz'):
-        with gzip.open(owl_file, 'rt') as fh:
-            bp = biopax.process_owl_str(fh.read())
+        bp = biopax.process_owl_gz(owl_file)
     else:
         bp = biopax.process_owl(owl_file)
     sites = get_mod_sites(bp.statements)
