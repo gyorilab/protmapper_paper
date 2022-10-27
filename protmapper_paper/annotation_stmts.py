@@ -143,6 +143,10 @@ def get_statements(sites_file, mappings_file, output_pkl=None):
     # We now filter Statements to the subset of interest
     statements = filter_statements(statements)
 
+    # Refresh hashes
+    for stmt in statements:
+        stmt.get_hash(refresh=True)
+
     # Dump Statements into a pickle
     if output_pkl:
         with open(output_pkl, 'wb') as fh:

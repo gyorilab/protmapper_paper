@@ -186,6 +186,18 @@ $(OUTPUT)/annotation_statements.pkl: \
 	python -m protmapper_paper.annotation_stmts \
 		$(OUTPUT)/all_sites.pkl $(OUTPUT)/mapping_results.pkl $@
 
+
+$(OUTPUT)/stmt_beliefs.json: \
+    $(OUTPUT)/annotation_statements.pkl \
+    $(DATA)/protmapper_belief_training_corpus.json \
+    $(DATA)/protmapper_belief_training_corpus_curations.json \
+    $(DATA)/protmapper_belief_training_corpus_extra_evidences.pkl
+	python -m protmapper_paper.belief \
+		    $(OUTPUT)/annotation_statements.pkl \
+		    $(DATA)/protmapper_belief_training_corpus.json \
+		    $(DATA)/protmapper_belief_training_corpus_curations.json \
+		    $(DATA)/protmapper_belief_training_corpus_extra_evidences.pkl $@
+
 # Export of all annotated sites with evidence
 $(OUTPUT)/export.csv: \
     $(OUTPUT)/all_sites.pkl \
