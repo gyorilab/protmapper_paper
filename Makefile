@@ -138,13 +138,6 @@ $(OUTPUT)/site_info.csv: \
 
 $(OUTPUT)/annotations.csv: $(OUTPUT)/site_info.csv
 
-# Export of all annotated sites with evidence
-$(OUTPUT)/export.csv: \
-    $(OUTPUT)/all_sites.pkl \
-    $(OUTPUT)/mapping_results.pkl
-	python -m protmapper_paper.analyze_sites export \
-        $< $(word 2,$^) $@ $(OUTPUT)/evidences.csv
-
 # Plots on correctness/mappability
 $(PLOTS)/site_stats_by_site.pdf: $(OUTPUT)/site_info.csv
 	python -m protmapper_paper.analyze_sites plot_site_stats $< \
@@ -185,4 +178,18 @@ $(OUTPUT)/ovca_annotation_counts.csv: \
     $(OUTPUT)/annotations.csv \
     $(DATA)/TCGA_Ovarian_PNNL_Phosphoproteome.phosphosite.itraq.tsv
 	python -m protmapper_paper.annotation_count $< $(word 2,$^) $@
+
+# Statements, beliefs and export
+$(OUTPUT)/annotation_statements.pkl: \
+    $(OUTPUT)/all_sites.pkl \
+    $(OUTPUT)/mapping_results.pkl
+	python -m protmapper_paper.annotation_stmts \
+		$(OUTPUT)/all_sites.pkl $(OUTPUT)/mapping_results.pkl $@
+
+# Export of all annotated sites with evidence
+$(OUTPUT)/export.csv: \
+    $(OUTPUT)/all_sites.pkl \
+    $(OUTPUT)/mapping_results.pkl
+	python -m protmapper_paper.analyze_sites export \
+        $< $(word 2,$^) $@ $(OUTPUT)/evidences.csv
 
