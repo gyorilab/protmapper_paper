@@ -6,7 +6,15 @@ DEPLOY := ../protmapper_manuscript/figures/figure_panels
 all: figs cptac export
 
 figs: $(PLOTS)/site_stats_by_site.pdf \
-      $(PLOTS)/psp_reader_sites_overlap_distinct.pdf
+      $(PLOTS)/psp_db_reader_sites_overlap_distinct.pdf \
+      $(PLOTS)/reader_sites_overlap_distinct.pdf \
+      $(PLOTS)/psp_db_reader_annotation_overlap_distinct.pdf \
+      $(PLOTS)/reader_annotation_overlap_distinct.pdf \
+      $(PLOTS)/psp_db_reader_annotation_overlap_distinct_kinase.pdf \
+      $(PLOTS)/reader_annotation_overlap_distinct_kinase.pdf \
+      $(PLOTS)/psp_db_reader_annotation_overlap_distinct_kinase_nofamplex.pdf \
+      $(PLOTS)/reader_annotation_overlap_distinct_kinase_nofamplex.pdf \
+      $(PLOTS)/annotations_valid_counts.pdf
 
 cptac: \
     $(OUTPUT)/brca_peptide_mapping_results.csv \
@@ -46,17 +54,12 @@ agent_mods: $(OUTPUT)/indra_sparser_agent_mod.sites.pkl \
 #	gunzip $@
 #
 # Get phospho statements from INDRA DB/Reading -----------------------
-$(OUTPUT)/indra_db_stmts.pkl:
-	python -m protmapper_paper.get_sites.indra get_db_phos_stmts $@
+$(OUTPUT)/indra_db_stmts.pkl $(OUTPUT)/indra_agent_mod_stmts.pkl:
+	python -m protmapper_paper.get_sites.indra get_db_phos_stmts \
+		$(OUTPUT)/indra_db_stmts.pkl $(OUTPUT)/indra_agent_mod_stmts.pkl
 
-$(OUTPUT)/indra_rlimsp_stmts.pkl: $(DATA)/rlims.medline.json $(DATA)/rlims.pmc.json
-	python -m protmapper_paper.get_sites.indra get_rlimsp_phos_stmts $@ $(DATA)/rlims.medline.json $(DATA)/rlims.pmc.json
-
-$(OUTPUT)/indra_all_stmts.pkl: $(OUTPUT)/indra_db_stmts.pkl $(OUTPUT)/indra_rlimsp_stmts.pkl
-	python -m protmapper_paper.get_sites.indra get_all_indra_phos_stmts $@ $(OUTPUT)/indra_db_stmts.pkl $(OUTPUT)/indra_rlimsp_stmts.pkl
-
-$(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl: $(OUTPUT)/indra_all_stmts.pkl
-	python -m protmapper_paper.get_sites.indra preprocess_stmts $< $@ true
+$(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl: $(OUTPUT)/indra_db_stmts.pkl
+	python -m protmapper_paper.get_sites.indra preprocess_stmts $< $@
 
 $(OUTPUT)/indra_reach.sites.pkl: \
     $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl
@@ -71,11 +74,8 @@ $(OUTPUT)/indra_sparser.sites.pkl: \
 	python -m protmapper_paper.get_sites.indra stmts_by_site $< sparser $@
 
 # Get modified Agent statements from INDRA DB/Reading -----------------------
-$(OUTPUT)/indra_agent_mod_stmts.pkl:
-	python -m protmapper_paper.get_sites.indra get_agent_mod_stmts $@
-
 $(OUTPUT)/indra_agent_mod_stmts_gmap_uniq_respos.pkl: $(OUTPUT)/indra_agent_mod_stmts.pkl
-	python -m protmapper_paper.get_sites.indra preprocess_stmts $< $@ false
+	python -m protmapper_paper.get_sites.indra preprocess_stmts $< $@
 
 $(OUTPUT)/indra_reach_agent_mod.sites.pkl: \
     $(OUTPUT)/indra_agent_mod_stmts_gmap_uniq_respos.pkl
@@ -92,7 +92,7 @@ $(OUTPUT)/indra_sparser_agent_mod.sites.pkl: \
 
 # COLLECT_SITES --------------------------------------------------------------
 # PC Sites/Biopax
-$(OUTPUT)/%.sites.pkl: $(DATA)/biopax/%.owl
+$(OUTPUT)/%.sites.pkl: $(DATA)/biopax/%.owl.gz
 	python -m protmapper_paper.get_sites.biopax $< $@
 
 # BEL Sites
@@ -106,27 +106,17 @@ $(OUTPUT)/bel_large_corpus.sites.pkl: $(OUTPUT)/large_corpus_pybel.pkl
 $(OUTPUT)/signor.sites.pkl:
 	python -m protmapper_paper.get_sites.signor $@
 
-# Reader Sites
-$(OUTPUT)/reader_sites.pkl: $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl
-	python get_indra_sites.py reader_sites $<
-
-# Phosphosite from TSV
-#$(OUTPUT)/psp_kinase_substrate_tsv.pkl: \
-#    $(DATA)/Kinase_Substrate_Dataset
-#	python -m protmapper_paper.get_sites.psp $< $@
+# HPRD sites
+$(OUTPUT)/hprd.sites.pkl: $(DATA)/HPRD_FLAT_FILES_041310.tar.gz
+	python -m protmapper_paper.get_sites.hprd $< $@
 
 # All sites, combined into a single dict
-# Skipping the other sources for PSP and Reactome data
-#$(OUTPUT)/biopax/PathwayCommons10.psp.BIOPAX.pkl
-#$(OUTPUT)/biopax/Homo_sapiens.pkl
 $(OUTPUT)/all_sites.pkl: \
     $(OUTPUT)/signor.sites.pkl \
+    $(OUTPUT)/hprd.sites.pkl \
     $(OUTPUT)/bel_large_corpus.sites.pkl \
-    $(OUTPUT)/PathwayCommons10.kegg.BIOPAX.sites.pkl \
-    $(OUTPUT)/PathwayCommons10.panther.BIOPAX.sites.pkl \
-    $(OUTPUT)/PathwayCommons10.pid.BIOPAX.sites.pkl \
-    $(OUTPUT)/PathwayCommons10.reactome.BIOPAX.sites.pkl \
-    $(OUTPUT)/PathwayCommons10.wp.BIOPAX.sites.pkl \
+    $(OUTPUT)/PathwayCommons12.pid.BIOPAX.sites.pkl \
+    $(OUTPUT)/PathwayCommons12.reactome.BIOPAX.sites.pkl \
     $(OUTPUT)/Kinase_substrates.sites.pkl \
     $(OUTPUT)/indra_reach.sites.pkl \
     $(OUTPUT)/indra_sparser.sites.pkl \
@@ -148,19 +138,12 @@ $(OUTPUT)/site_info.csv: \
 
 $(OUTPUT)/annotations.csv: $(OUTPUT)/site_info.csv
 
-# Export of all annotated sites with evidence
-$(OUTPUT)/export.csv: \
-    $(OUTPUT)/all_sites.pkl \
-    $(OUTPUT)/mapping_results.pkl
-	python -m protmapper_paper.analyze_sites export \
-        $< $(word 2,$^) $@ $(OUTPUT)/evidences.csv
-
 # Plots on correctness/mappability
 $(PLOTS)/site_stats_by_site.pdf: $(OUTPUT)/site_info.csv
 	python -m protmapper_paper.analyze_sites plot_site_stats $< \
         $(PLOTS)/site_stats
 
-$(PLOTS)/psp_reader_sites_overlap_distinct.pdf: \
+$(PLOTS)/psp_db_reader_sites_overlap_distinct.pdf $(PLOTS)/reader_sites_overlap_distinct.pdf $(PLOTS)/psp_db_reader_annotation_overlap_distinct.pdf $(PLOTS)/reader_annotation_overlap_distinct.pdf $(PLOTS)/psp_db_reader_annotation_overlap_distinct_kinase.pdf $(PLOTS)/reader_annotation_overlap_distinct_kinase.pdf $(PLOTS)/psp_db_reader_annotation_overlap_distinct_kinase_nofamplex.pdf $(PLOTS)/reader_annotation_overlap_distinct_kinase_nofamplex.pdf: \
     $(OUTPUT)/site_info.csv \
     $(OUTPUT)/annotations.csv
 	python -m protmapper_paper.psp_reading_venn
@@ -196,11 +179,28 @@ $(OUTPUT)/ovca_annotation_counts.csv: \
     $(DATA)/TCGA_Ovarian_PNNL_Phosphoproteome.phosphosite.itraq.tsv
 	python -m protmapper_paper.annotation_count $< $(word 2,$^) $@
 
+# Statements, beliefs and export
+$(OUTPUT)/annotation_statements.pkl: \
+    $(OUTPUT)/all_sites.pkl \
+    $(OUTPUT)/mapping_results.pkl
+	python -m protmapper_paper.annotation_stmts \
+		$(OUTPUT)/all_sites.pkl $(OUTPUT)/mapping_results.pkl $@
 
-# MOUSE data ---------------------------------------------------------
 
-$(OUTPUT)/psp_relations_by_site.pkl: $(DATA)/Kinase_Substrate_Dataset
-	python get_psp_tsv_sites.py
+$(OUTPUT)/stmt_beliefs.json: \
+    $(OUTPUT)/annotation_statements.pkl \
+    $(DATA)/protmapper_belief_training_corpus.json \
+    $(DATA)/protmapper_belief_training_corpus_curations.json \
+    $(DATA)/protmapper_belief_training_corpus_extra_evidences.pkl
+	python -m protmapper_paper.belief \
+		    $(OUTPUT)/annotation_statements.pkl \
+		    $(DATA)/protmapper_belief_training_corpus.json \
+		    $(DATA)/protmapper_belief_training_corpus_curations.json \
+		    $(DATA)/protmapper_belief_training_corpus_extra_evidences.pkl $@
 
-#$(OUTPUT)/mouse_kin_sub_count.txt: $(OUTPUT)/psp_relations_by_site.pkl
+# Export of all annotated sites with evidence
+$(OUTPUT)/export.csv: \
+    $(OUTPUT)/annotation_statements.pkl
+	python -m protmapper_paper.analyze_sites export \
+        $(OUTPUT)/annotation_statements.pkl $(OUTPUT)/stmt_beliefs.json $@ $(OUTPUT)/evidences.csv
 

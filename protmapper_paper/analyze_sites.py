@@ -1,5 +1,6 @@
 import csv
 import sys
+import json
 import pickle
 from collections import Counter, defaultdict
 import matplotlib
@@ -7,6 +8,7 @@ matplotlib.use('agg')
 import pandas as pd
 from matplotlib import pyplot as plt
 from indra.util import plot_formatting as pf
+from indra.ontology.bio import bio_ontology
 
 
 def create_site_csv(site_dict, mapping_results, site_file, annot_file):
@@ -84,108 +86,21 @@ def create_site_csv(site_dict, mapping_results, site_file, annot_file):
         csvwriter.writerows(annotations)
 
 
-def create_export(site_stmts, mapping_results, export_file, evs_file):
-    from indra.statements import Agent
-    from indra.tools.expand_families import Expander
-    from indra.databases import uniprot_client, hgnc_client
-
-    expander = Expander()
+def create_export(annotation_stmts_file, stmt_beliefs_file,
+                  export_file, evs_file):
+    from indra.databases import hgnc_client
 
     # Make header for main export file
     export_header = ['ID',
                      'CTRL_NS', 'CTRL_ID', 'CTRL_GENE_NAME', 'CTRL_IS_KINASE',
                      'TARGET_UP_ID', 'TARGET_GENE_NAME', 'TARGET_RES',
-                     'TARGET_POS','SOURCES'
-                     ]
+                     'TARGET_POS', 'SOURCES', 'BELIEF']
     # Make header for evidence export file
     evidence_header = ['ID', 'SOURCE', 'PMID', 'DBID', 'TEXT',
                        'DESCRIPTION',
                        'ORIG_UP_ID', 'ORIG_RES', 'ORIG_POS',
                        'MAPPED_UP_ID', 'MAPPED_RES', 'MAPPED_POS']
 
-    site_info = {}
-    site_evidence = defaultdict(list)
-    idx = 0
-    # site_stmts is a dict with structure like
-    # site_stmts[('Q15438', 'T', '395')]['rhs']['signor'] ->
-    # [Phosphorylation(PRKCD(), CYTH1(), T, 395)]
-    for (orig_up_id, orig_res, orig_pos), stmt_dict in site_stmts.items():
-        # We skip sites that are missing residue or position
-        if not orig_res or not orig_pos:
-            continue
-        # Next, we construct keys for the *final* site (either valid to begin
-        # with or mapped to be valid), and if there is no valid final
-        # site, we skip the site
-        ms = mapping_results[(orig_up_id, orig_res, orig_pos)]
-        if ms.valid:
-            final_site = [ms.up_id, ms.orig_res, ms.orig_pos]
-        elif ms.mapped_res and ms.mapped_pos:
-            final_site = [ms.mapped_id, ms.mapped_res, ms.mapped_pos]
-        else:
-            continue
-        # Skip non-human substrates
-        if not uniprot_client.is_human(final_site[0]):
-            continue
-        target_gene_name = uniprot_client.get_gene_name(final_site[0])
-        final_site = [final_site[0], target_gene_name, final_site[1],
-                      final_site[2]]
-
-        # We now look at all the Statements where the given site
-        # appears as a substrate and get controllers and evidences
-        for source, stmts in stmt_dict['rhs'].items():
-            for stmt in stmts:
-                # If there is no controller, we skip the entry
-                if stmt.enz is None:
-                    continue
-                # We next get the grounding for the controller and
-                # if there is no grounding, we skip it
-                ctrl_ns, ctrl_id = stmt.enz.get_grounding()
-                if ctrl_ns not in ['UP', 'HGNC', 'FPLX'] or ctrl_id is None:
-                    continue
-
-                ctrl_gene_name = None
-                ctrl_is_kinase = False
-                # Get human gene name for UniProt entries
-                if ctrl_ns == 'UP':
-                    # Skip non-human protein controllers
-                    if not uniprot_client.is_human(ctrl_id):
-                        continue
-                    ctrl_gene_name = uniprot_client.get_gene_name(ctrl_id)
-                    if hgnc_client.is_kinase(ctrl_gene_name):
-                        ctrl_is_kinase = True
-                # Map human gene names to UniProt IDs
-                if ctrl_ns == 'HGNC':
-                    gene_name = hgnc_client.get_hgnc_name(ctrl_id)
-                    if hgnc_client.is_kinase(gene_name):
-                        ctrl_is_kinase = True
-                    up_id = hgnc_client.get_uniprot_id(ctrl_id)
-                    if up_id:
-                        ctrl_ns = 'UP'
-                        ctrl_gene_name = gene_name
-                        ctrl_id = up_id
-                if ctrl_ns == 'FPLX':
-                    children = expander.get_children(
-                        Agent(ctrl_id, db_refs={'FPLX': ctrl_id}))
-                    for _, hgnc_id in children:
-                        gene_name = hgnc_client.get_hgnc_name(hgnc_id)
-                        if hgnc_client.is_kinase(gene_name):
-                            ctrl_is_kinase = True
-                            break
-
-                # We can now make a full key that contains the controller
-                # as well as the target and final site
-                final_annot_key = tuple([ctrl_ns, ctrl_id, ctrl_gene_name,
-                                         ctrl_is_kinase] + final_site)
-                # We use this full key to store evidences and mapping details
-                if final_annot_key not in site_info:
-                    site_info[final_annot_key] = idx
-                    idx += 1
-                # Note: we do get multiple pieces of evidence, e.g.,
-                # from biopax
-                for ev in stmt.evidence:
-                    site_evidence[final_annot_key].append([ev, source, ms])
-
-    # Now make the actual export tables
     def sanitize_ev_text(txt):
         if txt is None:
             return ''
@@ -193,30 +108,50 @@ def create_export(site_stmts, mapping_results, export_file, evs_file):
             txt = txt.replace('\n', ' ')
             return txt
 
+    with open(annotation_stmts_file, 'rb') as fh:
+        annotation_stmts = pickle.load(fh)
+
+    with open(stmt_beliefs_file, 'r') as fh:
+        belief_hashes = json.load(fh)
+
     export_rows = [export_header]
     evidence_rows = [evidence_header]
-    for key, idx in site_info.items():
-        (ctrl_ns, ctrl_id, ctrl_gene_name, ctrl_is_kinase, target_up_id,
-            target_gene_name, target_res, target_pos) = key
-        export_row = [str(idx),
-                      ctrl_ns, ctrl_id, ctrl_gene_name, ctrl_is_kinase,
-                      target_up_id, target_gene_name, target_res, target_pos]
-        # Now get evidences
-        evs = site_evidence[key]
-        sources = sorted(list({s for e, s, m in evs}))
-        export_row.append(','.join(sources))
+    ns_order = ['UP', 'HGNC', 'FPLX']
+    for idx, stmt in enumerate(annotation_stmts):
+        for ns in ns_order:
+            if ns in stmt.enz.db_refs:
+                ctrl_ns, ctrl_id = ns, stmt.enz.db_refs[ns]
+                break
+        if ctrl_ns in ['UP', 'HGNC']:
+            ctrl_gene_name = stmt.enz.name
+            ctrl_is_kinase = hgnc_client.is_kinase(ctrl_gene_name)
+        else:
+            ctrl_gene_name = None
+            ctrl_is_kinase = False
+            children = bio_ontology.get_children('FPLX', ctrl_id,
+                                                 ns_filter={'HGNC'})
+            for _, hgnc_id in children:
+                gene_name = hgnc_client.get_hgnc_name(hgnc_id)
+                if hgnc_client.is_kinase(gene_name):
+                    ctrl_is_kinase = True
+
+        target_id = stmt.sub.db_refs.get('UP')
+        target_name = stmt.sub.name
+        sources = ','.join(sorted({ev.source_api for ev in stmt.evidence}))
+
+        export_row = [idx, ctrl_ns, ctrl_id, ctrl_gene_name, ctrl_is_kinase,
+                      target_id, target_name, stmt.residue, stmt.position,
+                      sources, belief_hashes[str(stmt.get_hash())]]
         export_rows.append(export_row)
-        for evidence, source, ms in evs:
-            if source == 'bel':
-                source_id = evidence.source_id[:16]
-            else:
-                source_id = evidence.source_id
-            row = [str(idx), source, evidence.pmid,
-                   source_id, sanitize_ev_text(evidence.text),
-                   ms.description,
-                   ms.up_id, ms.orig_res, ms.orig_pos,
-                   ms.mapped_id, ms.mapped_res, ms.mapped_pos]
-            evidence_rows.append(row)
+
+        for ev in stmt.evidence:
+            mapping = ev.annotations['site_mapping']
+            evidence_row = [idx, ev.source_api, ev.pmid, ev.source_id,
+                            sanitize_ev_text(ev.text), mapping['description'],
+                            mapping['up_id'], mapping['orig_res'],
+                            mapping['orig_pos'], mapping['mapped_id'],
+                            mapping['mapped_res'], mapping['mapped_pos']]
+            evidence_rows.append(evidence_row)
 
     with open(export_file, 'wt') as fh:
         csvwriter = csv.writer(fh)
@@ -286,6 +221,21 @@ def print_stats(site_df):
         print("  Invalid: %d (%0.1f)" % (f_inv, pct(f_inv, f)))
         print("  Mapped:  %d (%0.1f)" % (f_map, pct(f_map, f)))
         print("Pct occurrences mapped: %0.1f\n" % pct(f_map, f_inv))
+
+    # Print data for Figure 1B on MAPK1 sites
+    stats = defaultdict(list)
+    sites = [('T', 182), ('T', 183), ('T', 185), ('Y', 184), ('Y', 185),
+             ('Y', 187)]
+    for _, row in site_df[site_df['GENE_NAME'] == 'MAPK1'].iterrows():
+        pos = int(row['ORIG_POS'])
+        stats[(row['ORIG_RES'], pos)].append((row['SOURCE'], row['FREQ']))
+    print('Table for Figure 1B\n------------')
+    print('Site', 'Occ.', 'Sources')
+    for res, pos in sites:
+        src = len({s for s, c in stats[(res, pos)]})
+        occ = sum([c for s, c in stats[(res, pos)]])
+        print('%s%s' % (res, pos), occ, src)
+
     # Sample 100 invalid-unmapped (by unique sites)
     # Sample 100 invalid-mapped (by unique sites)
     results_df = pd.DataFrame.from_dict(results, orient='index')
@@ -328,6 +278,11 @@ def plot_annot_stats(csv_file, output_base):
     #sources = site_df.SOURCE.unique()
     sources = ['psp', 'signor', 'hprd', 'pid', 'reactome', 'bel',
                'reach', 'sparser', 'rlimsp']
+    source_labels = ['PSP', 'SIGNOR', 'HPRD', 'NCI-PID',
+                     'Reactome', 'BEL', 'Reach', 'Sparser', 'RLIMS-P']
+
+    # First, generate plot of absolute valid/invalid sites
+    # (Figure 1B and Figure 2E)
     fig_valid = plt.figure(figsize=(1.8, 2.2), dpi=150)
     fig_mapped = plt.figure(figsize=(1.8, 2.2), dpi=150)
     for ix, source in enumerate(sources):
@@ -344,7 +299,7 @@ def plot_annot_stats(csv_file, output_base):
         fig_valid.gca().bar(ix, height=len(valid), color='blue',
                             label='In Ref Seq')
         fig_valid.gca().bar(ix, height=len(invalid), bottom=len(valid),
-                color='red', label='Not in Ref Seq')
+                            color='red', label='Not in Ref Seq')
         # Plot for mapped stats
         fig_mapped.gca().bar(ix, height=len(valid), color='blue',
                              label='In Ref Seq')
@@ -352,20 +307,22 @@ def plot_annot_stats(csv_file, output_base):
                              color='green')
         fig_mapped.gca().bar(ix, height=len(unmapped),
                              bottom=(len(valid) + len(mapped)), color='red')
-    plt.xticks(range(len(sources)), sources, rotation="vertical")
-    plt.ylabel('Unique Site Annotations')
-    plt.subplots_adjust(left=0.31, bottom=0.25, top=0.90)
-    #plt.legend(loc='upper right', fontsize=pf.fontsize)
-    for fig in (fig_valid, fig_mapped):
+    for fig in [fig_valid, fig_mapped]:
         ax = fig.gca()
         pf.format_axis(ax)
+        ax.xaxis.set_ticks(range(len(sources)))
+        ax.set_xticklabels(labels=source_labels, rotation='vertical')
+        ax.set_ylabel('Unique Site Annotations')
+        fig.subplots_adjust(left=0.31, bottom=0.25, top=0.95)
+        #fig.legend(loc='upper right', fontsize=pf.fontsize)
     fig_valid.savefig('%s_valid_counts.pdf' % output_base)
     fig_mapped.savefig('%s_mapped_counts.pdf' % output_base)
 
+    # Now generate the plot of invalid site percentages
+    # (Figure 1C and Figure 2F)
     results = []
-    # Now generate the plot of invalid site proportions
-    fig_valid = plt.figure(figsize=(1.8, 2.2), dpi=150)
-    fig_mapped = plt.figure(figsize=(1.8, 2.2), dpi=150)
+    fig_valid = plt.figure(figsize=(1.8, 2.4), dpi=150)
+    fig_mapped = plt.figure(figsize=(1.8, 2.4), dpi=150)
     for ix, source in enumerate(sources):
         source_anns = site_df[site_df.SOURCE == source]
         valid = source_anns[source_anns.VALID == True]
@@ -395,14 +352,17 @@ def plot_annot_stats(csv_file, output_base):
                              bottom=pct_valid, color='green')
         fig_mapped.gca().bar(ix, height=pct_unmapped,
                              bottom=(pct_valid + pct_mapped), color='red')
-    plt.xticks(range(len(sources)), sources, rotation="vertical")
-    plt.ylabel('Pct. Unique Site Annotations')
-    plt.subplots_adjust(left=0.31, bottom=0.25, top=0.90)
-    for fig in (fig_valid, fig_mapped):
+    for fig in [fig_valid, fig_mapped]:
         ax = fig.gca()
         pf.format_axis(ax)
+        ax.xaxis.set_ticks(range(len(sources)))
+        ax.set_xticklabels(labels=source_labels, rotation='vertical')
+        ax.set_ylabel('Pct. Unique Site Annotations')
+        fig.subplots_adjust(left=0.31, bottom=0.25, top=0.90)
     fig_valid.savefig('%s_valid_pcts.pdf' % output_base)
     fig_mapped.savefig('%s_mapped_pcts.pdf' % output_base)
+
+    # This is where Table 1 comes from
     result_df = pd.DataFrame.from_records(results, columns=
             ['SOURCE', 'TOTAL', 'VALID', 'VALID_PCT', 'INVALID', 'INVALID_PCT',
              'MAPPED', 'MAPPED_PCT_INVALID'])
@@ -447,12 +407,9 @@ if __name__ == '__main__':
         output_base = sys.argv[3]
         result_df = plot_annot_stats(input_file, output_base)
     elif sys.argv[1] == 'export':
-        site_pkl_file = sys.argv[2]
-        mapping_results_file = sys.argv[3]
+        annotation_stmts_file = sys.argv[2]
+        stmt_beliefs_file = sys.argv[3]
         export_file = sys.argv[4]
         evs_file = sys.argv[5]
-        with open(site_pkl_file, 'rb') as fh:
-            site_stmts = pickle.load(fh)
-        with open(mapping_results_file, 'rb') as f:
-            mapping_results = pickle.load(f)
-        create_export(site_stmts, mapping_results, export_file, evs_file)
+        create_export(annotation_stmts_file, stmt_beliefs_file,
+                      export_file, evs_file)
