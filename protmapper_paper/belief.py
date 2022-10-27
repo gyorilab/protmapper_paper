@@ -1,5 +1,6 @@
 import sys
 import json
+import pandas
 import pickle
 from matplotlib import pyplot as plt
 from sklearn.ensemble import RandomForestClassifier
@@ -7,7 +8,72 @@ from indra import belief
 from indra.belief.skl import CountsScorer
 from indra.ontology.bio import bio_ontology
 from indra.preassembler import Preassembler
-from indra.statements import stmts_from_json_file
+from indra.statements import stmts_from_json_file, stmts_to_json_file
+
+
+def get_curation_data(stmts_file, curation_data_file,
+                      training_corpus_file, training_corpus_curations_file,
+                      training_corpus_extra_evidence_file):
+    """This function can be used to produce
+       - protmapper_belief_training_corpus.json
+       - protmapper_belief_training_corpus_curations.json
+       - protmapper_belief_training_corpus_extra_evidences.pkl
+       from inputs:
+       - bioexp_asmb_preassembled.pkl
+       - curation_dataset_with_bg_psp.pkl
+    The ebove files are made available in version control directly so aren't
+    produced as part of the Makefile.
+    """
+    # Load pickle of bioexp statements.
+    with open(stmts_file, 'rb') as fh:
+        stmts = pickle.load(fh)
+
+    # Get dataset of curated statements along with correctness values
+    def stmts_for_df(df, stmts_by_hash):
+        stmt_list = []
+        for row in df.itertuples():
+            stmt_hash = row.stmt_hash
+            if stmt_hash not in stmts_by_hash:
+                continue
+            stmt_list.append(stmts_by_hash[stmt_hash])
+        return stmt_list
+
+    def load_curation_data(filename):
+        with open(filename, 'rb') as f:
+            dataset = pickle.load(f)
+            df = pandas.DataFrame.from_records(dataset)
+            df = df.fillna(0)
+        # Every column except agent names and stmt type should be int
+        dtype_dict = {col: 'int64' for col in df.columns
+                      if col not in ('agA_name', 'agA_ns', 'agA_id', 'stmt_type',
+                                     'agB_name', 'agB_ns', 'agB_id')}
+        df = df.astype(dtype_dict)
+        return df
+
+    stmts_by_hash = {s.get_hash(): s for s in stmts}
+    # Load the curated data
+    kge_df = load_curation_data(curation_data_file)
+    # Get statements from curation dataframe
+    kge_stmts = stmts_for_df(kge_df, stmts_by_hash)
+    kge_hashes = [s.get_hash() for s in kge_stmts]
+
+    # Curated correctness values
+    y_arr = kge_df['correct'].values
+    y_arr = [int(val) for val in y_arr]  # Convert to int for JSON serialization
+
+    # Get the more specific evidences for the curated statements
+    extra_evidence = belief.get_ev_for_stmts_from_supports(kge_stmts)
+
+    # Save the curated stmts
+    stmts_to_json_file(kge_stmts, training_corpus_file)
+
+    # Save the curations
+    with open(training_corpus_curations_file, 'w') as f:
+        json.dump(dict(zip(kge_hashes, y_arr)), f)
+
+    # Save the extra evidences
+    with open(training_corpus_extra_evidence_file, 'wb') as f:
+        pickle.dump(extra_evidence, f)
 
 
 if __name__ == '__main__':
