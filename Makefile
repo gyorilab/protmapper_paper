@@ -200,8 +200,7 @@ $(OUTPUT)/stmt_beliefs.json: \
 
 # Export of all annotated sites with evidence
 $(OUTPUT)/export.csv: \
-    $(OUTPUT)/all_sites.pkl \
-    $(OUTPUT)/mapping_results.pkl
+    $(OUTPUT)/annotation_statements.pkl
 	python -m protmapper_paper.analyze_sites export \
-        $< $(word 2,$^) $@ $(OUTPUT)/evidences.csv
+        $(OUTPUT)/annotation_statements.pkl $(OUTPUT)/stmt_beliefs.json $@ $(OUTPUT)/evidences.csv
 
