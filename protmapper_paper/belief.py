@@ -2,6 +2,7 @@ import sys
 import json
 import pandas
 import pickle
+import matplotlib
 from matplotlib import pyplot as plt
 from sklearn.ensemble import RandomForestClassifier
 from indra import belief
@@ -117,10 +118,10 @@ if __name__ == '__main__':
                 ev.source_api = 'biopax'
 
     pa = Preassembler(bio_ontology, protmap_stmts)
-    protmap_stmts = pa.combine_related(return_toplevel=False)
+    assembled_stmts = pa.combine_related(return_toplevel=False)
     with_db_ev = []
     no_db_ev = []
-    for s in protmap_stmts:
+    for s in assembled_stmts:
         sources = set([e.source_api for e in s.evidence])
         for supp_stmt in s.supports:
             for supp_ev in supp_stmt.evidence:
@@ -135,13 +136,44 @@ if __name__ == '__main__':
     belief_engine = belief.BeliefEngine(scorer)
     belief_engine.set_hierarchy_probs(no_db_ev)
 
-    beliefs_by_hash = {stmt.get_hash(): stmt.belief for stmt in protmap_stmts}
+    beliefs_by_hash = {stmt.get_hash(): stmt.belief for stmt in assembled_stmts}
     with open(belief_output, 'w') as fh:
         json.dump(beliefs_by_hash, fh, indent=1)
 
-    # Plot reading-only Statements
-    rf_beliefs = [s.belief for s in no_db_ev]
+    # Now set beliefs on the original statements
+    for stmt in protmap_stmts:
+        stmt.belief = beliefs_by_hash[stmt.get_hash()]
+
+    with open('output/annotation_statements_with_belief.pkl', 'wb') as fh:
+        pickle.dump(protmap_stmts, fh)
+
+    # We now create two plots for all annotations and just from text mining
+    matplotlib.rcParams['pdf.fonttype'] = 42
+    matplotlib.rcParams['ps.fonttype'] = 42
+    matplotlib.rcParams['font.sans-serif'] = "Arial"
+    matplotlib.rcParams['font.family'] = "sans-serif"
+
+    # Plot all Statements
+    fig = plt.figure()
+    rf_beliefs = [s.belief for s in protmap_stmts]
     hist_res = plt.hist(rf_beliefs, alpha=0.5, bins=20)
     plt.xlim(0, 1.02)
-    plt.ylabel('Count')
-    plt.xlabel('Belief')
+    plt.xticks(fontsize=14)
+    plt.yticks(fontsize=14)
+    plt.ylabel('Number of annotations', fontsize=16)
+    plt.xlabel('INDRA belief score for annotation', fontsize=16)
+    fig.subplots_adjust(left=0.17, bottom=0.15, right=0.97, top=0.92)
+    plt.savefig('plots/all_belief_hist.pdf')
+
+    # Plot ones just with text mining support
+    fig = plt.figure()
+    rf_beliefs = [s.belief for s in protmap_stmts
+                  if not any(ev.source_api == 'biopax' for ev in s.evidence)]
+    hist_res = plt.hist(rf_beliefs, alpha=0.5, bins=20)
+    plt.xlim(0, 1.02)
+    plt.xticks(fontsize=14)
+    plt.yticks(fontsize=14)
+    plt.ylabel('Number of annotations', fontsize=16)
+    plt.xlabel('INDRA belief score for annotation', fontsize=16)
+    fig.subplots_adjust(left=0.17, bottom=0.15, right=0.97, top=0.92)
+    plt.savefig('plots/reading_only_belief_hist.pdf')
