@@ -32,9 +32,13 @@ aggregated and mapped phosphosite annotation data:
 - `annotation_count.py`: Comparing the number of sites and annotations
   from different sources and the effect of applying ProtMapper mapping
   in the context of analyzing phosphoproteomic data.
+- `annotatioon_stmts.py`: Construct INDRA Statements representing phosphosite
+  annotations in the assembled corpus. This is the basis for the export.
 - `mapping_stats.py`: Statistics on the effect of applying ProtMapper mapping
   to phosphosite annotations aggregated from different sources.
 - `psp_reading_venn`: Create Venn diagrams of overlap between sites and
   annotations from different sources.
-- `sample_reading_sites`: Script to sample sites from machine reading for
+- `sample_reading_sites.py`: Script to sample sites from machine reading for
   curation.
+- `belief.py`: Script to calculate INDRA belief score corresponding to
+   phosphosite annotations in the assembled corpus.
