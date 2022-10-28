@@ -143,9 +143,14 @@ def get_statements(sites_file, mappings_file, output_pkl=None):
     # We now filter Statements to the subset of interest
     statements = filter_statements(statements)
 
+    # This is to make sure hash calculation happens with respect to the
+    # groundings as used to find unique annotations
+    from indra.statements import agent
+    agent.default_ns_order = ['UP', 'HGNC', 'FPLX']
     # Refresh hashes
     for stmt in statements:
         stmt.get_hash(refresh=True)
+    assert len(statements) == len({s.get_hash() for s in statements})
 
     # Dump Statements into a pickle
     if output_pkl:

@@ -78,6 +78,11 @@ def get_curation_data(stmts_file, curation_data_file,
 
 
 if __name__ == '__main__':
+    # This is to make sure preassembly happens with respect to the
+    # groundings as used to find unique annotations
+    from indra.statements import agent
+    agent.default_ns_order = ['UP', 'HGNC', 'FPLX']
+
     annotation_stmts, training_corpus, curations, \
         curation_extra_evs, belief_output = sys.argv[1:6]
     with open(annotation_stmts, 'rb') as fh:
@@ -155,8 +160,8 @@ if __name__ == '__main__':
 
     # Plot all Statements
     fig = plt.figure()
-    rf_beliefs = [s.belief for s in protmap_stmts]
-    hist_res = plt.hist(rf_beliefs, alpha=0.5, bins=20)
+    beliefs = [s.belief for s in protmap_stmts]
+    hist_res = plt.hist(beliefs, alpha=0.5, bins=20)
     plt.xlim(0, 1.02)
     plt.xticks(fontsize=14)
     plt.yticks(fontsize=14)
@@ -167,8 +172,7 @@ if __name__ == '__main__':
 
     # Plot ones just with text mining support
     fig = plt.figure()
-    rf_beliefs = [s.belief for s in protmap_stmts
-                  if not any(ev.source_api == 'biopax' for ev in s.evidence)]
+    rf_beliefs = [s.belief for s in no_db_ev]
     hist_res = plt.hist(rf_beliefs, alpha=0.5, bins=20)
     plt.xlim(0, 1.02)
     plt.xticks(fontsize=14)
@@ -177,3 +181,9 @@ if __name__ == '__main__':
     plt.xlabel('INDRA belief score for annotation', fontsize=16)
     fig.subplots_adjust(left=0.17, bottom=0.15, right=0.97, top=0.92)
     plt.savefig('plots/reading_only_belief_hist.pdf')
+
+    print('Len: %d' % len(rf_beliefs))
+    print('Min: %f' % min(rf_beliefs))
+    print('Max: %f' % max(rf_beliefs))
+    import numpy
+    print('Median: %f' % numpy.median(rf_beliefs))
