@@ -4,7 +4,7 @@ This repository contains scripts and other files for generating the results
 of the manuscript. The results build on both the ProtMapper and INDRA
 systems.
 
-ProtMapper is available at: https://github.com/indralab/protmapper
+ProtMapper is available at: https://github.com/gyorilab/protmapper
 INDRA is available at: https://github.com/sorgerlab/indra
 
 The `Makefile` contains all the commands for generating results based on
