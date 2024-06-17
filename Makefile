@@ -55,39 +55,39 @@ agent_mods: $(OUTPUT)/indra_sparser_agent_mod.sites.pkl \
 #
 # Get phospho statements from INDRA DB/Reading -----------------------
 $(OUTPUT)/indra_db_stmts.pkl $(OUTPUT)/indra_agent_mod_stmts.pkl:
-	python -m protmapper_paper.get_sites.indra get_db_phos_stmts \
+	python -m protmapper_paper.get_sites.indra_sites get_db_phos_stmts \
 		$(OUTPUT)/indra_db_stmts.pkl $(OUTPUT)/indra_agent_mod_stmts.pkl
 
 $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl: $(OUTPUT)/indra_db_stmts.pkl
-	python -m protmapper_paper.get_sites.indra preprocess_stmts $< $@
+	python -m protmapper_paper.get_sites.indra_sites preprocess_stmts $< $@
 
 $(OUTPUT)/indra_reach.sites.pkl: \
     $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl
-	python -m protmapper_paper.get_sites.indra stmts_by_site $< reach $@
+	python -m protmapper_paper.get_sites.indra_sites stmts_by_site $< reach $@
 
 $(OUTPUT)/indra_rlimsp.sites.pkl: \
     $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl
-	python -m protmapper_paper.get_sites.indra stmts_by_site $< rlimsp $@
+	python -m protmapper_paper.get_sites.indra_sites stmts_by_site $< rlimsp $@
 
 $(OUTPUT)/indra_sparser.sites.pkl: \
     $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl
-	python -m protmapper_paper.get_sites.indra stmts_by_site $< sparser $@
+	python -m protmapper_paper.get_sites.indra_sites stmts_by_site $< sparser $@
 
 # Get modified Agent statements from INDRA DB/Reading -----------------------
 $(OUTPUT)/indra_agent_mod_stmts_gmap_uniq_respos.pkl: $(OUTPUT)/indra_agent_mod_stmts.pkl
-	python -m protmapper_paper.get_sites.indra preprocess_stmts $< $@
+	python -m protmapper_paper.get_sites.indra_sites preprocess_stmts $< $@
 
 $(OUTPUT)/indra_reach_agent_mod.sites.pkl: \
     $(OUTPUT)/indra_agent_mod_stmts_gmap_uniq_respos.pkl
-	python -m protmapper_paper.get_sites.indra agent_mod_stmts_by_site $< reach $@
+	python -m protmapper_paper.get_sites.indra_sites agent_mod_stmts_by_site $< reach $@
 
 $(OUTPUT)/indra_rlimsp_agent_mod.sites.pkl: \
     $(OUTPUT)/indra_agent_mod_stmts_gmap_uniq_respos.pkl
-	python -m protmapper_paper.get_sites.indra agent_mod_stmts_by_site $< rlimsp $@
+	python -m protmapper_paper.get_sites.indra_sites agent_mod_stmts_by_site $< rlimsp $@
 
 $(OUTPUT)/indra_sparser_agent_mod.sites.pkl: \
     $(OUTPUT)/indra_agent_mod_stmts_gmap_uniq_respos.pkl
-	python -m protmapper_paper.get_sites.indra agent_mod_stmts_by_site $< sparser $@
+	python -m protmapper_paper.get_sites.indra_sites agent_mod_stmts_by_site $< sparser $@
 
 
 # COLLECT_SITES --------------------------------------------------------------
@@ -96,11 +96,8 @@ $(OUTPUT)/%.sites.pkl: $(DATA)/biopax/%.owl.gz
 	python -m protmapper_paper.get_sites.biopax $< $@
 
 # BEL Sites
-$(OUTPUT)/large_corpus_pybel.pkl: $(DATA)/large_corpus.bel
-	python -m protmapper_paper.get_sites.bel parse_belscript $< $@
-
-$(OUTPUT)/bel_large_corpus.sites.pkl: $(OUTPUT)/large_corpus_pybel.pkl
-	python -m protmapper_paper.get_sites.bel get_pybel_stmts_by_site $< $@
+$(OUTPUT)/bel_large_corpus.sites.pkl: $(DATA)/large_corpus.bel
+	python -m protmapper_paper.get_sites.bel $< $@
 
 # SIGNOR sites
 $(OUTPUT)/signor.sites.pkl:
