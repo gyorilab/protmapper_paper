@@ -3,8 +3,6 @@ import sys
 import pickle
 
 FILE_SOURCE_MAP = {
-    'PathwayCommons12.kegg.BIOPAX.sites.pkl': 'kegg',
-    'PathwayCommons12.panther.BIOPAX.sites.pkl': 'panther',
     'PathwayCommons12.pid.BIOPAX.sites.pkl': 'pid',
     'PathwayCommons12.reactome.BIOPAX.sites.pkl': 'reactome',
     'Kinase_substrates.sites.pkl': 'psp',
@@ -36,7 +34,7 @@ if __name__ == '__main__':
                 # Make sure we can handle separate agent mod statements
                 # for a given reader so we check if there is already
                 # something there for the given site and only overwrite
-                # if if there isn't.
+                # if there isn't.
                 if not all_sites[site]['lhs'].get(source):
                     all_sites[site]['lhs'][source] = site_dict[site]['lhs']
                 if not all_sites[site]['rhs'].get(source):

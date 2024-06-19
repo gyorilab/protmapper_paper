@@ -1,6 +1,5 @@
 import sys
 import pickle
-import pybel
 from indra.sources import bel
 from .util import get_mod_sites
 

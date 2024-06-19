@@ -49,10 +49,15 @@ agent_mods: $(OUTPUT)/indra_sparser_agent_mod.sites.pkl \
 
 # DATA -----------------------------------------------------------------------
 
-#$(DATA)/PathwayCommons9.All.hgnc.txt:
-#	wget -P $(DATA) http://www.pathwaycommons.org/archives/PC2/v9/PathwayCommons9.All.hgnc.txt.gz
-#	gunzip $@
-#
+$(DATA)/PathwayCommons12.reactome.BIOPAX.owl.gz:
+	wget -P $(DATA) https://www.pathwaycommons.org/archives/PC2/v12/PathwayCommons12.reactome.BIOPAX.owl.gz
+
+$(DATA)/PathwayCommons12.pid.BIOPAX.owl.gz:
+	wget -P $(DATA) https://www.pathwaycommons.org/archives/PC2/v12/PathwayCommons12.pid.BIOPAX.owl.gz
+
+$(DATA)/HPRD_FLAT_FILES_041310.tar.gz:
+    wget -P $(DATA) https://rescued.omnipathdb.org/HPRD_FLAT_FILES_041310.tar.gz
+
 # Get phospho statements from INDRA DB/Reading -----------------------
 $(OUTPUT)/indra_db_stmts.pkl $(OUTPUT)/indra_agent_mod_stmts.pkl:
 	python -m protmapper_paper.get_sites.indra_sites get_db_phos_stmts \
@@ -91,8 +96,16 @@ $(OUTPUT)/indra_sparser_agent_mod.sites.pkl: \
 
 
 # COLLECT_SITES --------------------------------------------------------------
-# PC Sites/Biopax
-$(OUTPUT)/%.sites.pkl: $(DATA)/biopax/%.owl.gz
+# PID sites
+$(OUTPUT)/pid.sites.pkl: $(DATA)/PathwayCommons12.pid.BIOPAX.owl.gz
+	python -m protmapper_paper.get_sites.biopax $< $@
+
+# Reactome sites
+$(OUTPUT)/reactome.sites.pkl: $(DATA)/PathwayCommons12.reactome.BIOPAX.owl.gz
+	python -m protmapper_paper.get_sites.biopax $< $@
+
+# PSP sites
+$(OUTPUT)/psp.sites.pkl: $(DATA)/Kinase_substrates.owl.gz
 	python -m protmapper_paper.get_sites.biopax $< $@
 
 # BEL Sites
@@ -112,9 +125,9 @@ $(OUTPUT)/all_sites.pkl: \
     $(OUTPUT)/signor.sites.pkl \
     $(OUTPUT)/hprd.sites.pkl \
     $(OUTPUT)/bel_large_corpus.sites.pkl \
-    $(OUTPUT)/PathwayCommons12.pid.BIOPAX.sites.pkl \
-    $(OUTPUT)/PathwayCommons12.reactome.BIOPAX.sites.pkl \
-    $(OUTPUT)/Kinase_substrates.sites.pkl \
+    $(OUTPUT)/pid.sites.pkl \
+    $(OUTPUT)/reactome.sites.pkl \
+    $(OUTPUT)/psp.sites.pkl \
     $(OUTPUT)/indra_reach.sites.pkl \
     $(OUTPUT)/indra_sparser.sites.pkl \
     $(OUTPUT)/indra_rlimsp.sites.pkl \
