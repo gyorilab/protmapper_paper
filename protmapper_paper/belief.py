@@ -1,6 +1,7 @@
 import sys
 import json
 import pandas
+import numpy
 import pickle
 import matplotlib
 from matplotlib import pyplot as plt
@@ -185,5 +186,4 @@ if __name__ == '__main__':
     print('Len: %d' % len(rf_beliefs))
     print('Min: %f' % min(rf_beliefs))
     print('Max: %f' % max(rf_beliefs))
-    import numpy
     print('Median: %f' % numpy.median(rf_beliefs))

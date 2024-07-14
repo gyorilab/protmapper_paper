@@ -49,58 +49,68 @@ agent_mods: $(OUTPUT)/indra_sparser_agent_mod.sites.pkl \
 
 # DATA -----------------------------------------------------------------------
 
-#$(DATA)/PathwayCommons9.All.hgnc.txt:
-#	wget -P $(DATA) http://www.pathwaycommons.org/archives/PC2/v9/PathwayCommons9.All.hgnc.txt.gz
-#	gunzip $@
-#
+$(DATA)/PathwayCommons12.reactome.BIOPAX.owl.gz:
+	wget -P $(DATA) https://www.pathwaycommons.org/archives/PC2/v12/PathwayCommons12.reactome.BIOPAX.owl.gz
+
+$(DATA)/PathwayCommons12.pid.BIOPAX.owl.gz:
+	wget -P $(DATA) https://www.pathwaycommons.org/archives/PC2/v12/PathwayCommons12.pid.BIOPAX.owl.gz
+
+$(DATA)/HPRD_FLAT_FILES_041310.tar.gz:
+    wget -P $(DATA) https://rescued.omnipathdb.org/HPRD_FLAT_FILES_041310.tar.gz
+
 # Get phospho statements from INDRA DB/Reading -----------------------
 $(OUTPUT)/indra_db_stmts.pkl $(OUTPUT)/indra_agent_mod_stmts.pkl:
-	python -m protmapper_paper.get_sites.indra get_db_phos_stmts \
+	python -m protmapper_paper.get_sites.indra_sites get_db_phos_stmts \
 		$(OUTPUT)/indra_db_stmts.pkl $(OUTPUT)/indra_agent_mod_stmts.pkl
 
 $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl: $(OUTPUT)/indra_db_stmts.pkl
-	python -m protmapper_paper.get_sites.indra preprocess_stmts $< $@
+	python -m protmapper_paper.get_sites.indra_sites preprocess_stmts $< $@
 
 $(OUTPUT)/indra_reach.sites.pkl: \
     $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl
-	python -m protmapper_paper.get_sites.indra stmts_by_site $< reach $@
+	python -m protmapper_paper.get_sites.indra_sites stmts_by_site $< reach $@
 
 $(OUTPUT)/indra_rlimsp.sites.pkl: \
     $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl
-	python -m protmapper_paper.get_sites.indra stmts_by_site $< rlimsp $@
+	python -m protmapper_paper.get_sites.indra_sites stmts_by_site $< rlimsp $@
 
 $(OUTPUT)/indra_sparser.sites.pkl: \
     $(OUTPUT)/indra_phos_stmts_gmap_uniq_respos.pkl
-	python -m protmapper_paper.get_sites.indra stmts_by_site $< sparser $@
+	python -m protmapper_paper.get_sites.indra_sites stmts_by_site $< sparser $@
 
 # Get modified Agent statements from INDRA DB/Reading -----------------------
 $(OUTPUT)/indra_agent_mod_stmts_gmap_uniq_respos.pkl: $(OUTPUT)/indra_agent_mod_stmts.pkl
-	python -m protmapper_paper.get_sites.indra preprocess_stmts $< $@
+	python -m protmapper_paper.get_sites.indra_sites preprocess_stmts $< $@
 
 $(OUTPUT)/indra_reach_agent_mod.sites.pkl: \
     $(OUTPUT)/indra_agent_mod_stmts_gmap_uniq_respos.pkl
-	python -m protmapper_paper.get_sites.indra agent_mod_stmts_by_site $< reach $@
+	python -m protmapper_paper.get_sites.indra_sites agent_mod_stmts_by_site $< reach $@
 
 $(OUTPUT)/indra_rlimsp_agent_mod.sites.pkl: \
     $(OUTPUT)/indra_agent_mod_stmts_gmap_uniq_respos.pkl
-	python -m protmapper_paper.get_sites.indra agent_mod_stmts_by_site $< rlimsp $@
+	python -m protmapper_paper.get_sites.indra_sites agent_mod_stmts_by_site $< rlimsp $@
 
 $(OUTPUT)/indra_sparser_agent_mod.sites.pkl: \
     $(OUTPUT)/indra_agent_mod_stmts_gmap_uniq_respos.pkl
-	python -m protmapper_paper.get_sites.indra agent_mod_stmts_by_site $< sparser $@
+	python -m protmapper_paper.get_sites.indra_sites agent_mod_stmts_by_site $< sparser $@
 
 
 # COLLECT_SITES --------------------------------------------------------------
-# PC Sites/Biopax
-$(OUTPUT)/%.sites.pkl: $(DATA)/biopax/%.owl.gz
+# PID sites
+$(OUTPUT)/pid.sites.pkl: $(DATA)/PathwayCommons12.pid.BIOPAX.owl.gz
+	python -m protmapper_paper.get_sites.biopax $< $@
+
+# Reactome sites
+$(OUTPUT)/reactome.sites.pkl: $(DATA)/PathwayCommons12.reactome.BIOPAX.owl.gz
+	python -m protmapper_paper.get_sites.biopax $< $@
+
+# PSP sites
+$(OUTPUT)/psp.sites.pkl: $(DATA)/Kinase_substrates.owl.gz
 	python -m protmapper_paper.get_sites.biopax $< $@
 
 # BEL Sites
-$(OUTPUT)/large_corpus_pybel.pkl: $(DATA)/large_corpus.bel
-	python -m protmapper_paper.get_sites.bel parse_belscript $< $@
-
-$(OUTPUT)/bel_large_corpus.sites.pkl: $(OUTPUT)/large_corpus_pybel.pkl
-	python -m protmapper_paper.get_sites.bel get_pybel_stmts_by_site $< $@
+$(OUTPUT)/bel_large_corpus.sites.pkl: $(DATA)/large_corpus.bel
+	python -m protmapper_paper.get_sites.bel $< $@
 
 # SIGNOR sites
 $(OUTPUT)/signor.sites.pkl:
@@ -115,9 +125,9 @@ $(OUTPUT)/all_sites.pkl: \
     $(OUTPUT)/signor.sites.pkl \
     $(OUTPUT)/hprd.sites.pkl \
     $(OUTPUT)/bel_large_corpus.sites.pkl \
-    $(OUTPUT)/PathwayCommons12.pid.BIOPAX.sites.pkl \
-    $(OUTPUT)/PathwayCommons12.reactome.BIOPAX.sites.pkl \
-    $(OUTPUT)/Kinase_substrates.sites.pkl \
+    $(OUTPUT)/pid.sites.pkl \
+    $(OUTPUT)/reactome.sites.pkl \
+    $(OUTPUT)/psp.sites.pkl \
     $(OUTPUT)/indra_reach.sites.pkl \
     $(OUTPUT)/indra_sparser.sites.pkl \
     $(OUTPUT)/indra_rlimsp.sites.pkl \
