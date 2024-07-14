@@ -56,7 +56,7 @@ $(DATA)/PathwayCommons12.pid.BIOPAX.owl.gz:
 	wget -P $(DATA) https://www.pathwaycommons.org/archives/PC2/v12/PathwayCommons12.pid.BIOPAX.owl.gz
 
 $(DATA)/HPRD_FLAT_FILES_041310.tar.gz:
-    wget -P $(DATA) https://rescued.omnipathdb.org/HPRD_FLAT_FILES_041310.tar.gz
+	wget -P $(DATA) https://rescued.omnipathdb.org/HPRD_FLAT_FILES_041310.tar.gz
 
 # Get phospho statements from INDRA DB/Reading -----------------------
 $(OUTPUT)/indra_db_stmts.pkl $(OUTPUT)/indra_agent_mod_stmts.pkl:
