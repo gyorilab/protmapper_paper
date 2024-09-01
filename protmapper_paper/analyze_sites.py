@@ -74,7 +74,7 @@ def create_site_csv(site_dict, mapping_results, site_file, annot_file):
                            source, ms.gene_name, ms.up_id, ms.error_code,
                            ms.valid, ms.orig_res, ms.orig_pos, ms.mapped_id,
                            ms.mapped_res, ms.mapped_pos, ms.description, side,
-                           True, len(stmts)])
+                           True, len(stmts), 0, 0])
     print("Saving %d site entries to %s" % (len(all_sites)-1, site_file))
     with open(site_file, 'wt') as f:
         csvwriter = csv.writer(f)
