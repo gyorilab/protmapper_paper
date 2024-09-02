@@ -9,6 +9,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from indra.util import plot_formatting as pf
 from indra.ontology.bio import bio_ontology
+from indra.databases import uniprot_client
 
 
 def create_site_csv(site_dict, mapping_results, site_file, annot_file):
@@ -272,9 +273,21 @@ def plot_site_stats(csv_file, output_base):
 
 
 def plot_annot_stats(csv_file, output_base):
+    # This variable is called site_df but it's actually a dataframe
+    # of annotations, loaded from annotations.csv.
     site_df = pd.read_csv(csv_file)
     # Drop rows with error_code (invalid gene names in BEL)
     site_df = site_df[site_df.ERROR_CODE.isna()]
+
+    # To make these results match the Venn diagrams and other stats, we
+    # filter the statements as follows:
+    # Filter to protein controllers only
+    site_df = site_df[site_df.CTRL_IS_PROTEIN == True]
+    # Filter to human protein substrates only
+    site_df = site_df[site_df.apply(
+        lambda x: uniprot_client.is_human(x['UP_ID']), axis=1
+    )]
+
     #sources = site_df.SOURCE.unique()
     sources = ['psp', 'signor', 'hprd', 'pid', 'reactome', 'bel',
                'reach', 'sparser', 'rlimsp']
@@ -323,6 +336,7 @@ def plot_annot_stats(csv_file, output_base):
     results = []
     fig_valid = plt.figure(figsize=(1.8, 2.4), dpi=150)
     fig_mapped = plt.figure(figsize=(1.8, 2.4), dpi=150)
+    unique_by_source = {}
     for ix, source in enumerate(sources):
         source_anns = site_df[site_df.SOURCE == source]
         valid = source_anns[source_anns.VALID == True]
@@ -331,17 +345,36 @@ def plot_annot_stats(csv_file, output_base):
                            invalid.MAPPED_POS.isna()]
         mapped = source_anns[~source_anns.MAPPED_RES.isna() &
                              ~source_anns.MAPPED_POS.isna()]
+        valid_keys = set(
+            valid[
+                ["CTRL_ID", "CTRL_NS", "UP_ID", "ORIG_RES", "ORIG_POS"]
+            ]
+            .itertuples(index=False, name=None)
+        )
+        mapped_keys = set(
+            mapped[
+                ["CTRL_ID", "CTRL_NS", "MAPPED_ID", "MAPPED_RES", "MAPPED_POS"]
+            ]
+            .itertuples(index=False, name=None)
+        )
+
         pct_mapped = 100 * len(mapped) / len(source_anns)
         pct_unmapped = 100 * len(unmapped) / len(source_anns)
         pct_valid = 100 * len(valid) / len(source_anns)
         pct_invalid = 100 * len(invalid) / len(source_anns)
         results.append([
-            source, len(source_anns), len(valid),
+            source,
+            len(source_anns),
+            len(valid),
             round(100 * len(valid) / len(source_anns), 1),
             len(invalid),
             round(100 * len(invalid) / len(source_anns), 1),
             len(mapped),
-            round(100 * len(mapped) / len(invalid), 1)])
+            round(100 * len(mapped) / len(invalid), 1),
+            len(valid_keys),
+            len(mapped_keys),
+            len(valid_keys | mapped_keys),
+            ])
         #print("%s, %d, %d, %d, %d" % (source, len(valid), len(invalid),
         #                              len(unmapped), len(mapped)))
         fig_valid.gca().bar(ix, height=pct_valid, color='blue')
@@ -365,7 +398,8 @@ def plot_annot_stats(csv_file, output_base):
     # This is where Table 1 comes from
     result_df = pd.DataFrame.from_records(results, columns=
             ['SOURCE', 'TOTAL', 'VALID', 'VALID_PCT', 'INVALID', 'INVALID_PCT',
-             'MAPPED', 'MAPPED_PCT_INVALID'])
+             'MAPPED', 'MAPPED_PCT_INVALID', 'UNIQUE_VALID', 'UNIQUE_MAPPED',
+             'UNIQUE_VALID_OR_MAPPED'])
     result_df.to_csv('%s_result_df.csv' % output_base)
     return result_df
 
