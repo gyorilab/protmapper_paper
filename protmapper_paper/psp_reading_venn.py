@@ -117,9 +117,17 @@ def print_reading_contribs(reader_sites, psp_sites):
 
 
 if __name__ == '__main__':
-    # SITES
-    df = pandas.read_csv('output/site_info.csv')
-    dfs = filter_sites(df)
+    # ANNOTATED SITES
+    # Because we are going to count only annotated sites, we obtain our site stats
+    # from the annotations file.
+    df = pandas.read_csv('output/annotations.csv')
+    dfa = filter_all_annots(df)
+    # We add a FREQ column for the purpose of backward compatibility with the code
+    # that worked with the site.csv data. Because we are making unweighted Venn
+    # diagrams, the value of this column is ignored.
+    dfs = dfa.copy()
+    dfs.loc[:, "FREQ"] = 0
+
     psp_sites = get_source_sites(dfs, ['psp'])
     db_sites = get_source_sites(dfs, ['psp', 'hprd', 'signor', 'pid',
                                       'reactome', 'bel'])
@@ -160,7 +168,6 @@ if __name__ == '__main__':
     # Load the overall annotations table
     df = pandas.read_csv('output/annotations.csv')
 
-    dfa = filter_all_annots(df)
     psp_annots = get_source_annots(dfa, ['psp'])
     db_annots = get_source_annots(dfa, ['psp', 'hprd', 'signor', 'pid',
                                         'reactome', 'bel'])
